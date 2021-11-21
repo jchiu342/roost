@@ -1,0 +1,12 @@
+# definitions allow for BLACK = -WHITE and vice versa.
+BLACK = 1
+WHITE = -1
+EMPTY = 0
+PLAY = 0
+PASS = 1
+RESIGN = 2
+NEGINF = -1e9
+INF = 1e9
+BOARD_SIZE = 9
+INPUT = (BOARD_SIZE * BOARD_SIZE + 1)
+MAX_GAME_LENGTH = (2 * BOARD_SIZE * BOARD_SIZE) + 1
