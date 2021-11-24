@@ -15,15 +15,15 @@ Action::Action(Color color, ActionType action_type, int x, int y) {
   assert(0 <= x && x < BOARD_SIZE && 0 <= y && y < BOARD_SIZE);
   switch (action_type) {
   case PLAY: {
-    value_ = x * BOARD_SIZE + y;
+    value_ = x * BOARD_SIZE + y + 1;
     break;
   }
   case PASS: {
-    value_ = BOARD_SIZE * BOARD_SIZE;
+    value_ = BOARD_SIZE * BOARD_SIZE + 1;
     break;
   }
   case RESIGN: {
-    value_ = BOARD_SIZE * BOARD_SIZE + 1;
+    value_ = BOARD_SIZE * BOARD_SIZE + 2;
     break;
   }
   }
@@ -34,9 +34,9 @@ Color Action::get_color() { return value_ > 0 ? BLACK : WHITE; }
 
 ActionType Action::get_type() {
   switch (value_ > 0 ? value_ : -value_) {
-  case (BOARD_SIZE * BOARD_SIZE):
-    return PASS;
   case (BOARD_SIZE * BOARD_SIZE + 1):
+    return PASS;
+  case (BOARD_SIZE * BOARD_SIZE + 2):
     return RESIGN;
   default:
     return PLAY;
@@ -44,13 +44,13 @@ ActionType Action::get_type() {
 }
 
 int Action::get_x() {
-  assert(abs(value_) < BOARD_SIZE * BOARD_SIZE);
-  return abs(value_) / BOARD_SIZE;
+  assert((abs(value_) - 1) < BOARD_SIZE * BOARD_SIZE);
+  return (abs(value_) - 1) / BOARD_SIZE;
 }
 
 int Action::get_y() {
-  assert(abs(value_) < BOARD_SIZE * BOARD_SIZE);
-  return abs(value_) % BOARD_SIZE;
+  assert((abs(value_) - 1) < BOARD_SIZE * BOARD_SIZE);
+  return (abs(value_) - 1) % BOARD_SIZE;
 }
 
 std::string Action::to_string() {
@@ -62,6 +62,7 @@ std::string Action::to_string() {
   case PLAY:
     return std::string("PLAY ") + (get_color() == BLACK ? "B " : "W ");
   }
+  return std::string();
 }
 
 } // namespace game

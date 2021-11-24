@@ -8,7 +8,7 @@ include_directories(include)
 
 # add_subdirectory(src)
 # file(GLOB SOURCES "src/*.cpp")
-set(SOURCES src/main.cpp src/game/Action.cpp)
+set(SOURCES src/main.cpp src/game/Action.cpp src/game/GameState.cpp include/game/GameState.h)
 add_executable(roost ${SOURCES})
 # target_link_libraries(roost PRIVATE roost_lib)
 # add_executable(roost src/main.cpp src/game/Action.cpp src/game/Action.h src/game/Game.cpp src/game/Game.h src/game/game_defs.h)

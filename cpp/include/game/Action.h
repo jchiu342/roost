@@ -10,7 +10,6 @@
 namespace game {
 
 enum ActionType {PLAY, PASS, RESIGN};
-enum Color {BLACK, WHITE, EMPTY};
 
 class Action {
 public:
