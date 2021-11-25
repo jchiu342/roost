@@ -16,8 +16,12 @@ GameState::GameState(float komi)
 }
 
 float GameState::score() {
-  bool *white_reachable = new bool[BOARD_SIZE * BOARD_SIZE];
-  bool *black_reachable = new bool[BOARD_SIZE * BOARD_SIZE];
+  // bool *white_reachable = new bool[BOARD_SIZE * BOARD_SIZE];
+  // bool *black_reachable = new bool[BOARD_SIZE * BOARD_SIZE];
+  bool white_reachable[BOARD_SIZE * BOARD_SIZE];
+  bool black_reachable[BOARD_SIZE * BOARD_SIZE];
+  memset(white_reachable, false, sizeof(white_reachable));
+  memset(black_reachable, false, sizeof(black_reachable));
   for (int x = 0; x < BOARD_SIZE; ++x) {
     for (int y = 0; y < BOARD_SIZE; ++y) {
       if (boards_[0][x * BOARD_SIZE + y] == BLACK) {
@@ -90,7 +94,7 @@ void GameState::move(Action action) {
 }
 
 // X = black, O = white, . = empty
-std::string GameState::to_string() {
+std::string GameState::to_string() const {
   std::stringstream stream;
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
     if (i % BOARD_SIZE == 0) stream << '\n';
@@ -146,6 +150,7 @@ void GameState::remove_dead_neighbors_(int x, int y, Color opposite_color) {
         a[1] + y < BOARD_SIZE) {
       int liberties = 0;
       bool visited[BOARD_SIZE * BOARD_SIZE];
+      memset(visited, false, sizeof(visited));
       std::set<int> chain;
       dfs_liberties_(a[0] + x, a[1] + y, opposite_color, visited, &chain, &liberties);
       if (liberties == 0) {
