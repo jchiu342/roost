@@ -13,7 +13,8 @@ enum ActionType {PLAY, PASS, RESIGN};
 
 class Action {
 public:
-  explicit Action(int value);
+  // action indexes go from 0 to BOARD_SIZE * BOARD_SIZE + 1
+  Action(Color color, int index);
   Action(Color color, ActionType action_type, int x = 0, int y = 0);
   Color get_color();
   ActionType get_type();

@@ -8,7 +8,12 @@
 
 namespace game {
 
-Action::Action(int value) : value_(value) {}
+Action::Action(Color color, int index) {
+  assert(color != EMPTY);
+  assert(0 <= index && index <= BOARD_SIZE * BOARD_SIZE + 1);
+  value_ = index + 1;
+  value_ *= (color == BLACK? 1 : -1);
+}
 
 Action::Action(Color color, ActionType action_type, int x, int y) {
   assert(color != EMPTY);

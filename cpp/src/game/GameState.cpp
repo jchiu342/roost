@@ -15,9 +15,28 @@ GameState::GameState(float komi)
   std::memset(boards_, 0, sizeof(boards_));
 }
 
-float GameState::score() {
-  // bool *white_reachable = new bool[BOARD_SIZE * BOARD_SIZE];
-  // bool *black_reachable = new bool[BOARD_SIZE * BOARD_SIZE];
+/* GameState::GameState(const GameState &state) {
+
+}*/
+
+Color GameState::get_turn() const {
+  assert(!done_);
+  return turn_;
+}
+
+float GameState::get_komi() const {
+  return komi_;
+}
+
+bool GameState::done() const {
+  return done_;
+}
+
+Color GameState::winner() const {
+  return winner_;
+}
+
+float GameState::score() const {
   bool white_reachable[BOARD_SIZE * BOARD_SIZE];
   bool black_reachable[BOARD_SIZE * BOARD_SIZE];
   memset(white_reachable, false, sizeof(white_reachable));
@@ -49,6 +68,21 @@ bool GameState::is_legal_action(Action action) {
   if (turn_ != action.get_color() || done_) return false;
   if (action.get_type() == PASS || action.get_type() == RESIGN) return true;
   return is_legal_play_(action.get_x(), action.get_y(), action.get_color());
+}
+
+std::vector<int> GameState::get_legal_action_indexes() {
+  // action indexes go from 0 to BOARD_SIZE * BOARD_SIZE + 1
+  // does NOT include resign, as stated in the header
+  if (done_) {
+    return {};
+  }
+  std::vector<int> ret_val;
+  for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
+    if (is_legal_action(Action(turn_, i))) {
+      ret_val.push_back(i);
+    }
+  }
+  return ret_val;
 }
 
 void GameState::move(Action action) {
@@ -162,7 +196,7 @@ void GameState::remove_dead_neighbors_(int x, int y, Color opposite_color) {
   }
 }
 
-void GameState::dfs_liberties_(int x, int y, Color c, bool *visited, std::set<int> *chain, int *liberties) {
+void GameState::dfs_liberties_(int x, int y, Color c, bool *visited, std::set<int> *chain, int *liberties) const {
   if (visited[x * BOARD_SIZE + y]) return;
   visited[x * BOARD_SIZE + y] = true;
   if (boards_[0][x * BOARD_SIZE + y] == EMPTY) {
@@ -181,7 +215,7 @@ void GameState::dfs_liberties_(int x, int y, Color c, bool *visited, std::set<in
 }
 
 void GameState::dfs_score_(int x, int y, Color opposite_color,
-                           bool *reachable) {
+                           bool *reachable) const {
   if (reachable[x * BOARD_SIZE + y]) {
     return;
   }
@@ -194,5 +228,9 @@ void GameState::dfs_score_(int x, int y, Color opposite_color,
     }
   }
 }
+
+/*int GameState::operator==(const GameState &other) {
+  return 0;
+}*/
 
 } // namespace game

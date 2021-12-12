@@ -2,7 +2,7 @@
 // Created by Jeremy on 11/24/2021.
 //
 
-#include "gtest/gtest.h"
+#include <gtest/gtest.h>
 #include "game/Action.h"
 #include "game/GameState.h"
 
