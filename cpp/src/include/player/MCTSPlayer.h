@@ -7,9 +7,9 @@
 #include "AbstractPlayer.h"
 #include "Evaluator.h"
 
+#include <memory>
 #include <random>
 #include <unordered_map>
-#include <memory>
 #include <vector>
 
 class MCTSPlayer : public AbstractPlayer {
@@ -21,9 +21,12 @@ class MCTSPlayer : public AbstractPlayer {
     std::vector<float> Q;
     std::vector<float> P;
   };
+
 public:
-  MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator, float cpuct = 1.0f, int playouts = 250);
+  MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
+             float cpuct = 1.0f, int playouts = 250);
   game::Action get_move(game::GameState state) override;
+
 private:
   float visit(game::GameState state);
   std::unique_ptr<Evaluator> evaluator_;
@@ -36,5 +39,4 @@ private:
   bool use_t1_;
 };
 
-
-#endif //ROOST_MCTSPLAYER_H
+#endif // ROOST_MCTSPLAYER_H

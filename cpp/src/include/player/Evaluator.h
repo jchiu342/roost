@@ -5,16 +5,17 @@
 #ifndef ROOST_EVALUATOR_H
 #define ROOST_EVALUATOR_H
 
+#include "game/GameState.h"
 #include <utility>
 #include <vector>
-#include "game/GameState.h"
 
 // TODO: replace with abstract evaluator when we implement NN
 class Evaluator {
 public:
   class Evaluation {
   public:
-    Evaluation(std::vector<float> policy, float value) : policy_(std::move(policy)), value_(value) {}
+    Evaluation(std::vector<float> policy, float value)
+        : policy_(std::move(policy)), value_(value) {}
     // we always return a vector with length equal to the # of possible indices
     // the MCTS is responsible for filtering out illegal actions
     std::vector<float> policy_;
@@ -24,4 +25,4 @@ public:
   Evaluation evaluate(const game::GameState &state);
 };
 
-#endif //ROOST_EVALUATOR_H
+#endif // ROOST_EVALUATOR_H

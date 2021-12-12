@@ -24,17 +24,11 @@ Color GameState::get_turn() const {
   return turn_;
 }
 
-float GameState::get_komi() const {
-  return komi_;
-}
+float GameState::get_komi() const { return komi_; }
 
-bool GameState::done() const {
-  return done_;
-}
+bool GameState::done() const { return done_; }
 
-Color GameState::winner() const {
-  return winner_;
-}
+Color GameState::winner() const { return winner_; }
 
 float GameState::score() const {
   bool white_reachable[BOARD_SIZE * BOARD_SIZE];
@@ -65,8 +59,10 @@ float GameState::score() const {
 }
 
 bool GameState::is_legal_action(Action action) {
-  if (turn_ != action.get_color() || done_) return false;
-  if (action.get_type() == PASS || action.get_type() == RESIGN) return true;
+  if (turn_ != action.get_color() || done_)
+    return false;
+  if (action.get_type() == PASS || action.get_type() == RESIGN)
+    return true;
   return is_legal_play_(action.get_x(), action.get_y(), action.get_color());
 }
 
@@ -90,40 +86,45 @@ void GameState::move(Action action) {
   ++turns_;
   turn_ = (turn_ == BLACK ? WHITE : BLACK);
   switch (action.get_type()) {
-    case RESIGN: {
+  case RESIGN: {
+    done_ = true;
+    winner_ = turn_;
+    return;
+  }
+  case PASS: {
+    ++passes_;
+    if (passes_ >= 3) {
       done_ = true;
-      winner_ = turn_;
+      float game_score = score();
+      if (game_score > 1e-8)
+        winner_ = BLACK;
+      else if (game_score < -1e-8)
+        winner_ = WHITE;
       return;
     }
-    case PASS: {
-      ++passes_;
-      if (passes_ >= 3) {
-        done_ = true;
-        float game_score = score();
-        if (game_score > 1e-8) winner_ = BLACK;
-        else if (game_score < -1e-8) winner_ = WHITE;
-        return;
-      }
-      break;
+    break;
+  }
+  case PLAY: {
+    passes_ = 0;
+    // shift all game history by 1
+    for (int i = 7; i > 0; --i) {
+      memcpy(boards_[i], boards_[i - 1], sizeof(boards_[i]));
     }
-    case PLAY: {
-      passes_ = 0;
-      // shift all game history by 1
-      for (int i = 7; i > 0; --i) {
-        memcpy(boards_[i], boards_[i - 1], sizeof(boards_[i]));
-      }
-      // update current board
-      boards_[0][action.get_x() * BOARD_SIZE + action.get_y()] = action.get_color();
-      // turn_ is already updated to the opposite color
-      remove_dead_neighbors_(action.get_x(), action.get_y(), turn_);
-      break;
-    }
+    // update current board
+    boards_[0][action.get_x() * BOARD_SIZE + action.get_y()] =
+        action.get_color();
+    // turn_ is already updated to the opposite color
+    remove_dead_neighbors_(action.get_x(), action.get_y(), turn_);
+    break;
+  }
   }
   if (turns_ >= MAX_GAME_LENGTH) {
     done_ = true;
     float game_score = score();
-    if (game_score > 1e-8) winner_ = BLACK;
-    else if (game_score < -1e-8) winner_ = WHITE;
+    if (game_score > 1e-8)
+      winner_ = BLACK;
+    else if (game_score < -1e-8)
+      winner_ = WHITE;
   }
 }
 
@@ -131,20 +132,21 @@ void GameState::move(Action action) {
 std::string GameState::to_string() const {
   std::stringstream stream;
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
-    if (i % BOARD_SIZE == 0) stream << '\n';
+    if (i % BOARD_SIZE == 0)
+      stream << '\n';
     switch (boards_[0][i]) {
-      case BLACK: {
-        stream << 'X';
-        break;
-      }
-      case WHITE: {
-        stream << 'O';
-        break;
-      }
-      case EMPTY: {
-        stream << '.';
-        break;
-      }
+    case BLACK: {
+      stream << 'X';
+      break;
+    }
+    case WHITE: {
+      stream << 'O';
+      break;
+    }
+    case EMPTY: {
+      stream << '.';
+      break;
+    }
     }
   }
   return stream.str();
@@ -152,7 +154,8 @@ std::string GameState::to_string() const {
 
 bool GameState::is_legal_play_(int x, int y, Color c) {
   assert(0 <= x && x < BOARD_SIZE && 0 <= y && y < BOARD_SIZE);
-  if (boards_[0][x * BOARD_SIZE + y] != EMPTY) return false;
+  if (boards_[0][x * BOARD_SIZE + y] != EMPTY)
+    return false;
   Color original_board[BOARD_SIZE * BOARD_SIZE];
   memcpy(original_board, boards_[0], sizeof(original_board));
   boards_[0][x * BOARD_SIZE + y] = c;
@@ -186,7 +189,8 @@ void GameState::remove_dead_neighbors_(int x, int y, Color opposite_color) {
       bool visited[BOARD_SIZE * BOARD_SIZE];
       memset(visited, false, sizeof(visited));
       std::set<int> chain;
-      dfs_liberties_(a[0] + x, a[1] + y, opposite_color, visited, &chain, &liberties);
+      dfs_liberties_(a[0] + x, a[1] + y, opposite_color, visited, &chain,
+                     &liberties);
       if (liberties == 0) {
         for (const int &coord : chain) {
           boards_[0][coord] = EMPTY;
@@ -196,8 +200,10 @@ void GameState::remove_dead_neighbors_(int x, int y, Color opposite_color) {
   }
 }
 
-void GameState::dfs_liberties_(int x, int y, Color c, bool *visited, std::set<int> *chain, int *liberties) const {
-  if (visited[x * BOARD_SIZE + y]) return;
+void GameState::dfs_liberties_(int x, int y, Color c, bool *visited,
+                               std::set<int> *chain, int *liberties) const {
+  if (visited[x * BOARD_SIZE + y])
+    return;
   visited[x * BOARD_SIZE + y] = true;
   if (boards_[0][x * BOARD_SIZE + y] == EMPTY) {
     *liberties = *liberties + 1;

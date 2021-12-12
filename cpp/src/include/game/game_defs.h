@@ -13,8 +13,8 @@ namespace game {
 
 // this allows us to quickly set empty boards via memset()
 constexpr int neighbors[4][2] = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}};
-enum Color {EMPTY = 0, BLACK = 1, WHITE = -1};
+enum Color { EMPTY = 0, BLACK = 1, WHITE = -1 };
 
-};
+}; // namespace game
 
-#endif //ROOST_GAME_DEFS_H
+#endif // ROOST_GAME_DEFS_H

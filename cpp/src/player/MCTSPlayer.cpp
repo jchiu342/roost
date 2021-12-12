@@ -8,20 +8,20 @@
 #include <iostream>
 #include <numeric>
 
-MCTSPlayer::MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator, float cpuct, int playouts) : AbstractPlayer(c),
-evaluator_(std::move(evaluator)), cpuct_(cpuct), playouts_(playouts), use_t1_(true) {
-
-}
+MCTSPlayer::MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
+                       float cpuct, int playouts)
+    : AbstractPlayer(c), evaluator_(std::move(evaluator)), cpuct_(cpuct),
+      playouts_(playouts), use_t1_(true) {}
 
 game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(state.get_turn() == color_);
   for (int i = 0; i < playouts_; ++i) {
     visit(state);
   }
-  for (int i = 0; i < map_[state].N.size(); ++i) {
-    std::cout << i << ' ' << map_[state].N[i] << "; ";
-  }
-  std::cout << std::endl;
+  // for (int i = 0; i < map_[state].N.size(); ++i) {
+  //   std::cout << i << ' ' << map_[state].N[i] << "; ";
+  // }
+  // std::cout << std::endl;
   // if temperature = 1, we simply choose move proportional to # of visits
   if (use_t1_) {
     std::uniform_int_distribution<> dist(1, playouts_);
@@ -48,7 +48,9 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
 }
 
 float MCTSPlayer::visit(game::GameState state) {
-  if (state.done()) { return (state.winner() == game::BLACK ? 1.0f : -1.0f); }
+  if (state.done()) {
+    return (state.winner() == game::BLACK ? 1.0f : -1.0f);
+  }
   // if never visited, expand
   if (!map_.contains(state)) {
     // initialize everything to 0
@@ -57,7 +59,8 @@ float MCTSPlayer::visit(game::GameState state) {
     Evaluator::Evaluation eval = evaluator_->evaluate(state);
     // cache our policy and value
     map_[state].P = eval.policy_;
-    // we want to return negative value bc other player is trying to minimize our score
+    // we want to return negative value bc other player is trying to minimize
+    // our score
     return eval.value_;
   }
 
@@ -65,11 +68,13 @@ float MCTSPlayer::visit(game::GameState state) {
   // equivalent to neginf
   float max_u = -100000000.0f;
   int best_action_idx = -1;
-  for (int legal_idx: state.get_legal_action_indexes()) {
+  for (int legal_idx : state.get_legal_action_indexes()) {
     // u = Q(s, a) + cpuct * P(s, a) * sqrt(sum_a N(s, a)) / (1 + N(s, a))
     float u = map_[state].Q[legal_idx] +
-              cpuct_ * map_[state].P[legal_idx] * sqrt(std::accumulate(map_[state].N.begin(), map_[state].N.end(), 0))
-              / (1 + map_[state].N[legal_idx]);
+              cpuct_ * map_[state].P[legal_idx] *
+                  sqrt(std::accumulate(map_[state].N.begin(),
+                                       map_[state].N.end(), 0)) /
+                  (1 + map_[state].N[legal_idx]);
     if (u > max_u) {
       max_u = u;
       best_action_idx = legal_idx;
@@ -78,10 +83,13 @@ float MCTSPlayer::visit(game::GameState state) {
   game::GameState state_copy = state;
   state_copy.move(game::Action(state.get_turn(), best_action_idx));
   float v = visit(state_copy);
-  // if we're white, we want to store -v, since we're trying to minimize the score
-  // Q(s, a) = (N(s, a)*Q(s, a) + v) / (N(s, a) + 1)
-  map_[state].Q[best_action_idx] = (static_cast<float>(map_[state].N[best_action_idx]) * map_[state].Q[best_action_idx] + (state.get_turn() == game::BLACK ? v : -v)) /
-          static_cast<float>(map_[state].N[best_action_idx] + 1);
+  // if we're white, we want to store -v, since we're trying to minimize the
+  // score Q(s, a) = (N(s, a)*Q(s, a) + v) / (N(s, a) + 1)
+  map_[state].Q[best_action_idx] =
+      (static_cast<float>(map_[state].N[best_action_idx]) *
+           map_[state].Q[best_action_idx] +
+       (state.get_turn() == game::BLACK ? v : -v)) /
+      static_cast<float>(map_[state].N[best_action_idx] + 1);
   ++map_[state].N[best_action_idx];
   return v;
 }

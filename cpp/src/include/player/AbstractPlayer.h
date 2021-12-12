@@ -17,5 +17,4 @@ protected:
   game::Color color_;
 };
 
-
-#endif //ROOST_ABSTRACTPLAYER_H
+#endif // ROOST_ABSTRACTPLAYER_H

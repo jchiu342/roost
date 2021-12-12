@@ -18,6 +18,7 @@ int main() {
   std::cout << state.to_string() << std::endl;
   state.move(Action(Color::BLACK, ActionType::PLAY, 1, 1));
   std::cout << state.to_string() << std::endl;
-  // std::cout << "Hello, World!" << (a.get_color() == game::BLACK) << std::endl;
+  // std::cout << "Hello, World!" << (a.get_color() == game::BLACK) <<
+  // std::endl;
   return 0;
 }

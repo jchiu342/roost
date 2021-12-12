@@ -8,7 +8,12 @@ include_directories(src/include)
 
 # add_subdirectory(src)
 # file(GLOB SOURCES "src/*.cpp")
-set(SOURCES src/main.cpp src/game/Action.cpp src/game/GameState.cpp src/include/player/AbstractPlayer.h src/player/RandomPlayer.cpp src/include/player/RandomPlayer.h src/player/MCTSPlayer.cpp src/include/player/MCTSPlayer.h src/include/player/Evaluator.h src/player/Evaluator.cpp)
+set(SOURCES src/main.cpp
+        src/game/Action.cpp
+        src/game/GameState.cpp
+        src/player/RandomPlayer.cpp
+        src/player/MCTSPlayer.cpp
+        src/player/Evaluator.cpp)
 add_executable(roost ${SOURCES})
 # target_link_libraries(roost PRIVATE roost_lib)
 # add_executable(roost src/main.cpp src/game/Action.cpp src/game/Action.h src/game/Game.cpp src/game/Game.h src/game/game_defs.h)
@@ -54,7 +59,13 @@ FetchContent_MakeAvailable(googletest)
 
 add_executable(
         hello_test
-        src/game/Action.cpp src/game/GameState.cpp src/player/RandomPlayer.cpp src/player/Evaluator.cpp src/player/MCTSPlayer.cpp test/game_test.cpp
+        src/game/Action.cpp
+        src/game/GameState.cpp
+        src/player/RandomPlayer.cpp
+        src/player/Evaluator.cpp
+        src/player/MCTSPlayer.cpp
+        src/play/Match.cpp
+        test/game_test.cpp
         test/player_test.cpp)
 target_link_libraries(
         hello_test
