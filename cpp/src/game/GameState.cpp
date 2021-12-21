@@ -10,8 +10,8 @@
 namespace game {
 
 GameState::GameState(float komi)
-    : komi_(komi), turns_(0), turn_(BLACK), passes_(0), done_(false),
-      winner_(EMPTY) {
+    : turn_(BLACK), winner_(EMPTY), komi_(komi), turns_(0), passes_(0),
+      done_(false) {
   std::memset(boards_, 0, sizeof(boards_));
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
     legal_action_idxes_.push_back(i);
@@ -57,28 +57,31 @@ float GameState::score() const {
   return count;
 }
 
-bool GameState::is_legal_action(Action action) {
+bool GameState::is_legal_action(Action action) const {
   // return (turn_ != action.get_color() || done_)
   if (turn_ != action.get_color() || done_)
     return false;
-  if (action.get_type() == PASS || action.get_type() == RESIGN)
+  return std::find(legal_action_idxes_.begin(), legal_action_idxes_.end(),
+                   action.get_index()) != legal_action_idxes_.end();
+  /* if (action.get_type() == PASS || action.get_type() == RESIGN)
     return true;
-  return is_legal_play_(action.get_x(), action.get_y(), action.get_color());
+  return is_legal_play_(action.get_x(), action.get_y(), action.get_color()); */
 }
 
-std::vector<int> GameState::get_legal_action_indexes() {
+std::vector<int> GameState::get_legal_action_indexes() const {
   // action indexes go from 0 to BOARD_SIZE * BOARD_SIZE + 1
   // does NOT include resign, as stated in the header
   if (done_) {
     return {};
   }
-  std::vector<int> ret_val;
+  return legal_action_idxes_;
+  /* std::vector<int> ret_val;
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
     if (is_legal_action(Action(turn_, i))) {
       ret_val.push_back(i);
     }
   }
-  return ret_val;
+  return ret_val; */
 }
 
 void GameState::move(Action action) {
@@ -118,6 +121,14 @@ void GameState::move(Action action) {
     break;
   }
   }
+  legal_action_idxes_.clear();
+  for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
+    Action a(turn_, i);
+    if (is_legal_play_(a.get_x(), a.get_y(), turn_)) {
+      legal_action_idxes_.push_back(i);
+    }
+  }
+  legal_action_idxes_.push_back(BOARD_SIZE * BOARD_SIZE);
   if (turns_ >= MAX_GAME_LENGTH) {
     done_ = true;
     float game_score = score();

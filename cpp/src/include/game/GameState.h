@@ -19,35 +19,35 @@ public:
   // int operator==(const GameState &other);
 
   // gets the turn; undefined behavior if game is done
-  Color get_turn() const;
+  [[nodiscard]] Color get_turn() const;
   // gets the komi
-  float get_komi() const;
+  [[nodiscard]] float get_komi() const;
   // gets whether the game is finished
-  bool done() const;
+  [[nodiscard]] bool done() const;
   // gets the winner if game is done; undefined behavior if not
-  Color winner() const;
+  [[nodiscard]] Color winner() const;
   // returns current score if game were to finish at moment - valid both
   // before/after game is finished
-  float score() const;
+  [[nodiscard]] float score() const;
   // always returns false if the game is done
-  bool is_legal_action(Action action);
+  [[nodiscard]] bool is_legal_action(Action action) const;
   // returns empty vector if the game is done; otherwise, there is always >=1
   // legal move (pass) does NOT include resign, which is always legal
-  std::vector<int> get_legal_action_indexes();
+  [[nodiscard]] std::vector<int> get_legal_action_indexes() const;
   void move(Action action);
-  std::string to_string() const;
+  [[nodiscard]] std::string to_string() const;
 
 private:
   // boards[0] is the most recent board, then boards[1], etc.
   Color boards_[GAME_HISTORY_LEN][BOARD_SIZE * BOARD_SIZE];
   Color turn_;
   Color winner_;
-  // this is valid UNLESS done_ = true
-  std::vector<int> legal_action_idxes_;
   float komi_;
   unsigned turns_;
   unsigned passes_;
   bool done_;
+  // this is valid UNLESS done_ = true
+  std::vector<int> legal_action_idxes_;
   bool is_legal_play_(int x, int y, Color c);
   void remove_dead_neighbors_(int x, int y, Color opposite_color);
   void dfs_liberties_(int x, int y, Color c, bool *visited,

@@ -16,12 +16,13 @@ public:
   // action indexes go from 0 to BOARD_SIZE * BOARD_SIZE + 1
   Action(Color color, int index);
   Action(Color color, ActionType action_type, int x = 0, int y = 0);
-  Color get_color();
-  ActionType get_type();
-  int get_x();
-  int get_y();
-  int get_index();
-  std::string to_string();
+  [[nodiscard]] Color get_color() const;
+  [[nodiscard]] ActionType get_type() const;
+  [[nodiscard]] int get_x() const;
+  [[nodiscard]] int get_y() const;
+  [[nodiscard]] int get_index() const;
+
+  [[maybe_unused]] [[nodiscard]] std::string to_string() const;
 
 private:
   /* Each action is internally represented by a single integer from 1 to

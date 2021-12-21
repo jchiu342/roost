@@ -35,9 +35,9 @@ Action::Action(Color color, ActionType action_type, int x, int y) {
   value_ *= (color == BLACK ? 1 : -1);
 }
 
-Color Action::get_color() { return value_ > 0 ? BLACK : WHITE; }
+Color Action::get_color() const { return value_ > 0 ? BLACK : WHITE; }
 
-ActionType Action::get_type() {
+ActionType Action::get_type() const {
   switch (value_ > 0 ? value_ : -value_) {
   case (BOARD_SIZE * BOARD_SIZE + 1):
     return PASS;
@@ -48,21 +48,19 @@ ActionType Action::get_type() {
   }
 }
 
-int Action::get_x() {
+int Action::get_x() const {
   assert((abs(value_) - 1) < BOARD_SIZE * BOARD_SIZE);
   return (abs(value_) - 1) / BOARD_SIZE;
 }
 
-int Action::get_y() {
+int Action::get_y() const {
   assert((abs(value_) - 1) < BOARD_SIZE * BOARD_SIZE);
   return (abs(value_) - 1) % BOARD_SIZE;
 }
 
-int Action::get_index() {
-  return abs(value_) - 1;
-}
+int Action::get_index() const { return abs(value_) - 1; }
 
-std::string Action::to_string() {
+std::string Action::to_string() const {
   switch (get_type()) {
   case PASS:
     return "PASS";
@@ -71,7 +69,7 @@ std::string Action::to_string() {
   case PLAY:
     return std::string("PLAY ") + (get_color() == BLACK ? "B " : "W ");
   }
-  return std::string();
+  return {};
 }
 
 } // namespace game
