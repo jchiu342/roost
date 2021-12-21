@@ -4,6 +4,12 @@ project(roost)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON) # Require C++20
 
+find_package(PythonInterp) # suppresses some warning while building; not required though
+find_package(Torch REQUIRED)
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fPIC -Wall -Wextra -march=native")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ggdb -fsanitize=address -fno-omit-frame-pointer -fno-optimize-sibling-calls")
 include_directories(src/include)
 
 # add_subdirectory(src)
@@ -11,10 +17,13 @@ include_directories(src/include)
 set(SOURCES src/main.cpp
         src/game/Action.cpp
         src/game/GameState.cpp
+        src/play/Match.cpp
         src/player/RandomPlayer.cpp
+        src/player/Evaluator.cpp
         src/player/MCTSPlayer.cpp
-        src/player/Evaluator.cpp)
+        src/player/NNEvaluator.cpp)
 add_executable(roost ${SOURCES})
+target_link_libraries(roost "${TORCH_LIBRARIES}")
 # target_link_libraries(roost PRIVATE roost_lib)
 # add_executable(roost src/main.cpp src/game/Action.cpp src/game/Action.h src/game/Game.cpp src/game/Game.h src/game/game_defs.h)
 
@@ -46,30 +55,32 @@ add_custom_target(format ${BUILD_SUPPORT_DIR}/run_clang_format.py
         )
 
 # add gtest
-enable_testing()
-include(FetchContent)
-FetchContent_Declare(
-        googletest
-        # Specify the commit you depend on and update it regularly.
-        URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
-
-add_executable(
-        hello_test
-        src/game/Action.cpp
-        src/game/GameState.cpp
-        src/player/RandomPlayer.cpp
-        src/player/Evaluator.cpp
-        src/player/MCTSPlayer.cpp
-        src/play/Match.cpp
-        test/game_test.cpp
-        test/player_test.cpp)
-target_link_libraries(
-        hello_test
-        gtest_main
-)
-
-add_test(NAME sample_test COMMAND hello_test)
+# enable_testing()
+# include(FetchContent)
+# FetchContent_Declare(
+#         googletest
+#         # Specify the commit you depend on and update it regularly.
+#         URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
+# )
+# # For Windows: Prevent overriding the parent project's compiler/linker settings
+# set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+# FetchContent_MakeAvailable(googletest)
+#
+# add_executable(
+#         hello_test
+#         src/game/Action.cpp
+#         src/game/GameState.cpp
+#         src/play/Match.cpp
+#         src/player/RandomPlayer.cpp
+#         src/player/Evaluator.cpp
+#         src/player/MCTSPlayer.cpp
+#         src/player/NNEvaluator.cpp
+#         test/game_test.cpp
+#         test/player_test.cpp)
+# target_link_libraries(
+#         hello_test
+#         gtest_main
+# )
+# target_link_libraries(hello_test "${TORCH_LIBRARIES}")
+#
+# add_test(NAME sample_test COMMAND hello_test)

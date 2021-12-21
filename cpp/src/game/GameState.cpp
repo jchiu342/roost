@@ -5,7 +5,7 @@
 #include "game/GameState.h"
 #include <cassert>
 #include <cstring>
-#include <sstream>
+// ;      #include <sstream>
 
 namespace game {
 
@@ -13,11 +13,10 @@ GameState::GameState(float komi)
     : komi_(komi), turns_(0), turn_(BLACK), passes_(0), done_(false),
       winner_(EMPTY) {
   std::memset(boards_, 0, sizeof(boards_));
+  for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
+    legal_action_idxes_.push_back(i);
+  }
 }
-
-/* GameState::GameState(const GameState &state) {
-
-}*/
 
 Color GameState::get_turn() const {
   assert(!done_);
@@ -59,6 +58,7 @@ float GameState::score() const {
 }
 
 bool GameState::is_legal_action(Action action) {
+  // return (turn_ != action.get_color() || done_)
   if (turn_ != action.get_color() || done_)
     return false;
   if (action.get_type() == PASS || action.get_type() == RESIGN)
@@ -130,26 +130,32 @@ void GameState::move(Action action) {
 
 // X = black, O = white, . = empty
 std::string GameState::to_string() const {
-  std::stringstream stream;
+  // std::stringstream stream;
+  std::string str;
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
     if (i % BOARD_SIZE == 0)
-      stream << '\n';
+      // stream << '\n';
+      str += '\n';
     switch (boards_[0][i]) {
     case BLACK: {
-      stream << 'X';
+      // stream << 'X';
+      str += 'X';
       break;
     }
     case WHITE: {
-      stream << 'O';
+      str += 'O';
+      // stream << 'O';
       break;
     }
     case EMPTY: {
-      stream << '.';
+      str += '.';
+      // stream << '.';
       break;
     }
     }
   }
-  return stream.str();
+  // return stream.str();
+  return str;
 }
 
 bool GameState::is_legal_play_(int x, int y, Color c) {

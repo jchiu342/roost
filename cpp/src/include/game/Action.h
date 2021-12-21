@@ -20,6 +20,7 @@ public:
   ActionType get_type();
   int get_x();
   int get_y();
+  int get_index();
   std::string to_string();
 
 private:

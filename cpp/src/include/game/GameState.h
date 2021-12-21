@@ -42,6 +42,8 @@ private:
   Color boards_[GAME_HISTORY_LEN][BOARD_SIZE * BOARD_SIZE];
   Color turn_;
   Color winner_;
+  // this is valid UNLESS done_ = true
+  std::vector<int> legal_action_idxes_;
   float komi_;
   unsigned turns_;
   unsigned passes_;

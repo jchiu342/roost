@@ -21,7 +21,7 @@ int Match::run() {
       } else {
         state.move(white_->get_move(state));
       }
-      std::cout << state.to_string() << std::endl;
+      // std::cout << state.to_string() << std::endl;
     }
     black_wins += (state.winner() == game::BLACK ? 1 : 0);
     std::cout << state.score() << std::endl;

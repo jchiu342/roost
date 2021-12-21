@@ -58,6 +58,10 @@ int Action::get_y() {
   return (abs(value_) - 1) % BOARD_SIZE;
 }
 
+int Action::get_index() {
+  return abs(value_) - 1;
+}
+
 std::string Action::to_string() {
   switch (get_type()) {
   case PASS:
