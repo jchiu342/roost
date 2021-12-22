@@ -6,6 +6,8 @@
 #define ROOST_NNEVALUATOR_H
 #include "Evaluator.h"
 #include <Torch/torch.h>
+#include <Torch/script.h>
+#include <memory>
 #include <vector>
 
 #define NUM_BLOCKS 5
@@ -112,10 +114,14 @@ class NNEvaluator : public Evaluator {
     nn::Sequential blocks;
     // OutBlock out;
   };
+
+public:
+  explicit NNEvaluator(const std::string &input_file = "");
   Evaluation Evaluate(const game::GameState &state);
 
 private:
-  Net nn_;
+  torch::jit::script::Module module_;
+  // Net nn_;
 };
 
 #endif // ROOST_NNEVALUATOR_H

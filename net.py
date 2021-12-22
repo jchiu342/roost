@@ -80,17 +80,25 @@ class OutBlock(nn.Module):
 class ConnectNet(nn.Module):
     def __init__(self):
         super(ConnectNet, self).__init__()
-        self.conv = ConvBlock()
-        for block in range(19):
-            setattr(self, "res_%i" % block, ResBlock())
-        self.outblock = OutBlock()
+        self.blocks = [ConvBlock()]
+        for i in range(BLOCKS):
+            self.blocks.append(ResBlock())
+        self.blocks.append(OutBlock())
+        self.blocks = torch.nn.Sequential(*self.blocks)
 
     def forward(self, s):
-        s = self.conv(s)
-        for block in range(19):
-            s = getattr(self, "res_%i" % block)(s)
-        s = self.outblock(s)
-        return s
+        return self.blocks(s)
+#         self.conv = ConvBlock()
+#         for block in range(19):
+#             setattr(self, "res_%i" % block, ResBlock())
+#         self.outblock = OutBlock()
+#
+#     def forward(self, s):
+#         s = self.conv(s)
+#         for block in range(19):
+#             s = getattr(self, "res_%i" % block)(s)
+#         s = self.outblock(s)
+#         return s
 
 
 class AlphaLoss(torch.nn.Module):

@@ -3,6 +3,7 @@ import numpy as np
 from fire import Fire
 from tqdm import tqdm
 import torch
+import torchvision
 from torch.utils.tensorboard import SummaryWriter
 from os.path import exists
 
@@ -90,6 +91,18 @@ def start_train(train_file, val_file):
         temp = open(MODEL_SAVE_FILE, "w")
         temp.close()
     train(trainset, valset, model, loss_fn, optimizer)
+
+
+def trace(val_file, trace_file):
+    valset = torch.utils.data.DataLoader(
+        GameDataset(val_file),
+        batch_size=BATCH_SIZE
+    )
+    model = ConnectNet()
+    for state, action, result in tqdm(valset):
+        traced_script_module = torch.jit.trace(model, state)
+        traced_script_module.save("traced_model.pt")
+        break
 
 
 if __name__ == "__main__":

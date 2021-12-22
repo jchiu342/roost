@@ -1,5 +1,6 @@
 *.npy
 *.pth
+*.pt
 __pycache__/
 .idea/
 runs/

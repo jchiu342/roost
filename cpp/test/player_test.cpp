@@ -3,6 +3,7 @@
 //
 
 #include <gtest/gtest.h>
+#include <torch/script.h>
 #include "game/GameState.h"
 #include "player/RandomPlayer.h"
 #include "player/Evaluator.h"
@@ -56,7 +57,7 @@ TEST(PlayerTest, DISABLED_MatchTest) {
 
 TEST(PlayerTest, NNTest) {
   game::GameState state(7.5);
-  std::unique_ptr<Evaluator> eval = std::make_unique<NNEvaluator>();
+  std::unique_ptr<Evaluator> eval = std::make_unique<NNEvaluator>("traced_model.pt");
   MCTSPlayer black_player(game::Color::BLACK, std::move(eval));
   RandomPlayer white_player(game::Color::WHITE);
   while (!state.done()) {
@@ -69,3 +70,18 @@ TEST(PlayerTest, NNTest) {
   }
   std::cout << state.score() << std::endl;
 }
+
+/*TEST(PlayerTest, TorchLoadTest) {
+  torch::jit::script::Module module;
+  const std::string model_string = "traced_model.pt";
+  try {
+    // Deserialize the ScriptModule from a file using torch::jit::load().
+    module = torch::jit::load(model_string);
+  }
+  catch (const c10::Error& e) {
+    std::cerr << "error loading the model\n";
+    // return -1;
+  }
+
+  std::cout << "ok\n";
+}*/

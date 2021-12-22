@@ -3,9 +3,29 @@
 //
 
 #include "player/NNEvaluator.h"
+#include <torch/script.h>
 #include <Torch/torch.h>
 
 using namespace torch;
+
+NNEvaluator::NNEvaluator(const std::string &input_file) {
+  try {
+    // Deserialize the ScriptModule from a file using torch::jit::load().
+    module_ = torch::jit::load(input_file);
+  }
+  catch (const c10::Error& e) {
+    std::cerr << "error loading the model\n";
+    assert(false);
+    // return -1;
+  }
+  // Net nn;
+  /* if (input_file != "") {
+    torch::load(nn_, input_file);
+    nn_->eval();
+    // nn_.load_state_dict(torch::load("model.pt"));
+  }
+  nn_.eval(); */
+}
 
 // TODO: refactor this so it doesn't break abstraction for gamestate
 Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
@@ -42,8 +62,10 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
       }
     }
   }
+  std::vector<torch::jit::IValue> inputs;
+  inputs.push_back(input);
 
-  Tensor output = nn_.forward(input);
+  Tensor output = module_.forward(inputs).toTensor();
   assert(output.size(0) == BOARD_SIZE * BOARD_SIZE + 2);
   std::vector<float> policy;
   auto output_accessor = output.accessor<float, 1>();
