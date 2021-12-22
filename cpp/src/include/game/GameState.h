@@ -20,6 +20,7 @@ public:
 
   // gets the turn; undefined behavior if game is done
   [[nodiscard]] Color get_turn() const;
+  [[nodiscard]] const Color *get_board(int i) const;
   // gets the komi
   [[nodiscard]] float get_komi() const;
   // gets whether the game is finished
@@ -70,7 +71,8 @@ template <> struct std::hash<game::GameState> {
 template <> struct std::equal_to<game::GameState> {
   bool operator()(const game::GameState &lhs,
                   const game::GameState &rhs) const {
-    return lhs.to_string() == rhs.to_string();
+    return lhs.to_string() == rhs.to_string() &&
+           lhs.get_legal_action_indexes() == rhs.get_legal_action_indexes();
   }
 };
 

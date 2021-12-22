@@ -23,6 +23,8 @@ Color GameState::get_turn() const {
   return turn_;
 }
 
+const Color *GameState::get_board(int i) const { return &boards_[i][0]; }
+
 float GameState::get_komi() const { return komi_; }
 
 bool GameState::done() const { return done_; }

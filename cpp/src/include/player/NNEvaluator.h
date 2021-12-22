@@ -85,9 +85,8 @@ class NNEvaluator : public Evaluator {
       v = v.view({-1, BOARD_SIZE * BOARD_SIZE});
       v = nn::functional::relu(v_fc1->forward(v));
       v = tanh(v_fc2->forward(v));
-      // TODO: fix this to return both policy/value
-      return p;
-      // return {p, v};
+      // return p;
+      return torch::cat({p, v});
     }
     nn::Conv2d p_conv1{nullptr}, v_conv1{nullptr};
     nn::BatchNorm2d p_bn1{nullptr}, v_bn1{nullptr};
@@ -113,9 +112,10 @@ class NNEvaluator : public Evaluator {
     nn::Sequential blocks;
     // OutBlock out;
   };
+  Evaluation Evaluate(const game::GameState &state);
 
 private:
-  Net nn;
+  Net nn_;
 };
 
 #endif // ROOST_NNEVALUATOR_H
