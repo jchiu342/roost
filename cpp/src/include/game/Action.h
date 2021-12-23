@@ -21,8 +21,8 @@ public:
   [[nodiscard]] int get_x() const;
   [[nodiscard]] int get_y() const;
   [[nodiscard]] int get_index() const;
-
   [[maybe_unused]] [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_sgf_string() const;
 
 private:
   /* Each action is internally represented by a single integer from 1 to

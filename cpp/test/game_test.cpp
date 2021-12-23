@@ -9,7 +9,7 @@
 using namespace game;
 
 // Demonstrate ko logic
-TEST(GameTest, GameStateLogicTest) {
+TEST(GameTest, DISABLED_GameStateLogicTest) {
   GameState state(7.5);
   state.move(Action(Color::BLACK, ActionType::PLAY, 0, 2));
   state.move(Action(Color::WHITE, ActionType::PLAY, 0, 1));

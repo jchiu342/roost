@@ -136,6 +136,7 @@ class Game:
         if self.get_game_state() == self.prev_game_state:
             self.board = original_board
             self.turn = -self.turn
+
             return False
         self.turn = -self.turn
         self.board = original_board

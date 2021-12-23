@@ -72,4 +72,17 @@ std::string Action::to_string() const {
   return {};
 }
 
+std::string Action::to_sgf_string() const {
+  if (get_type() == RESIGN) {
+    return {};
+  }
+  std::string return_string = (get_color() == BLACK ? ";B[" : ";W[");
+  if (get_type() == PLAY) {
+    return_string += static_cast<char>('a' + get_x());
+    return_string += static_cast<char>('a' + get_y());
+  }
+  return_string += "]\n";
+  return return_string;
+}
+
 } // namespace game
