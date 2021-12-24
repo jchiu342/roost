@@ -43,6 +43,8 @@ int Match::run() {
     } else {
       sgf_string += "RE[W+R])";
     }
+    black_->reset();
+    white_->reset();
     // dump sgf to file
     std::ofstream outfile(std::to_string(i) + ".sgf");
     outfile << sgf_string;

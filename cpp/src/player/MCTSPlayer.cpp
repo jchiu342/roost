@@ -15,7 +15,10 @@ MCTSPlayer::MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
 
 game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(state.get_turn() == color_);
-  for (int i = 0; i < playouts_; ++i) {
+  visit(state);
+  // apply dirichlet to root node
+  apply_dirichlet_noise_(state);
+  for (int i = 1; i < playouts_; ++i) {
     visit(state);
   }
   // for (int i = 0; i < map_[state].N.size(); ++i) {
@@ -47,7 +50,11 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
   // return {color_, legal_move_indexes[0]};
 }
 
-float MCTSPlayer::visit(game::GameState state) {
+void MCTSPlayer::reset() {
+  map_.clear();
+}
+
+float MCTSPlayer::visit(const game::GameState& state) {
   if (state.done()) {
     return (state.winner() == game::BLACK ? 1.0f : -1.0f);
   }
@@ -92,4 +99,24 @@ float MCTSPlayer::visit(game::GameState state) {
       static_cast<float>(map_[state].N[best_action_idx] + 1);
   ++map_[state].N[best_action_idx];
   return v;
+}
+
+void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
+  const std::vector<int> legal_actions = state.get_legal_action_indexes();
+  int num_values = legal_actions.size();
+  // generate dirichlet-distributed vector
+  std::gamma_distribution<> d(alpha_, 1);
+  std::vector<float> values;
+  float sum = 0.0;
+  for (int i = 0; i < num_values; ++i) {
+    values.push_back(d(gen_));
+    sum += values[i];
+  }
+  for (int i = 0; i < num_values; ++i) {
+    values[i] /= sum;
+  }
+  // apply dirichlet to each P(s, a)
+  for (int i = 0; i < num_values; ++i) {
+    map_[state].P[legal_actions[i]] = (1 - epsilon_) * map_[state].P[legal_actions[i]] + epsilon_ * values[i];
+  }
 }

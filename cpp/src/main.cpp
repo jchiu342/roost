@@ -1,23 +1,24 @@
 #include "game/GameState.h"
-#include "play/Match.h"
+#include "player/RandomPlayer.h"
 #include "player/Evaluator.h"
 #include "player/MCTSPlayer.h"
-#include "player/RandomPlayer.h"
+#include "player/NNEvaluator.h"
+#include "play/Match.h"
 #include <iostream>
+#include <memory>
 
 using namespace game;
 
-int main() {
-  std::unique_ptr<Evaluator> eval = std::make_unique<Evaluator>();
-  // std::unique_ptr<AbstractPlayer> black =
-  // std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(eval));
-  // std::unique_ptr<AbstractPlayer> white =
-  // std::make_unique<RandomPlayer>(game::Color::WHITE);
-  std::unique_ptr<AbstractPlayer> white =
-      std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(eval));
-  std::unique_ptr<AbstractPlayer> black =
-      std::make_unique<RandomPlayer>(game::Color::BLACK);
-  Match m(std::move(black), std::move(white), 2);
+int main(int argc, char *argv[]) {
+  if (argc < 2) {
+    std::cout << "Usage: ./roost <dir_name>\n";
+    return -1;
+  }
+  std::unique_ptr<Evaluator> b_eval = std::make_unique<NNEvaluator>("traced_model.pt");
+  std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval));
+  std::unique_ptr<Evaluator> w_eval = std::make_unique<NNEvaluator>("traced_model.pt");
+  std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval));
+  Match m(std::move(black), std::move(white), 10, argv[1]);
   std::cout << m.run();
   return 0;
 }
