@@ -5,8 +5,8 @@
 #ifndef ROOST_NNEVALUATOR_H
 #define ROOST_NNEVALUATOR_H
 #include "Evaluator.h"
-#include <Torch/torch.h>
 #include <Torch/script.h>
+#include <Torch/torch.h>
 #include <memory>
 #include <vector>
 

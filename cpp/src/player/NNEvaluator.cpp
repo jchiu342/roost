@@ -3,8 +3,8 @@
 //
 
 #include "player/NNEvaluator.h"
-#include <torch/script.h>
 #include <Torch/torch.h>
+#include <torch/script.h>
 
 using namespace torch;
 
@@ -12,8 +12,7 @@ NNEvaluator::NNEvaluator(const std::string &input_file) {
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
     module_ = torch::jit::load(input_file);
-  }
-  catch (const c10::Error& e) {
+  } catch (const c10::Error &e) {
     std::cerr << "error loading the model\n";
     assert(false);
     // return -1;

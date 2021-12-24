@@ -5,17 +5,25 @@
 #include "game/GameState.h"
 #include <cassert>
 #include <cstring>
-// ;      #include <sstream>
+#include <memory>
 
 namespace game {
 
-GameState::GameState(float komi)
+GameState::GameState(float komi, const std::shared_ptr<Zobrist> &zobrist)
     : turn_(BLACK), winner_(EMPTY), komi_(komi), turns_(0), passes_(0),
       done_(false) {
+  if (zobrist == nullptr) {
+    zobrist_ = std::make_shared<Zobrist>(BOARD_SIZE * BOARD_SIZE * 2 + 1);
+  } else {
+    zobrist_ = zobrist;
+    assert(zobrist_->size() >= BOARD_SIZE * BOARD_SIZE * 2 + 1);
+  }
   std::memset(boards_, 0, sizeof(boards_));
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
     legal_action_idxes_.push_back(i);
   }
+  // black moves first; all other features are off on the empty board
+  hash_ = zobrist_->get_value(BOARD_SIZE * BOARD_SIZE * 2);
 }
 
 Color GameState::get_turn() const {
@@ -90,6 +98,7 @@ void GameState::move(Action action) {
   assert(is_legal_action(action));
   ++turns_;
   turn_ = (turn_ == BLACK ? WHITE : BLACK);
+  hash_ ^= zobrist_->get_value(BOARD_SIZE * BOARD_SIZE * 2);
   switch (action.get_type()) {
   case RESIGN: {
     done_ = true;
@@ -98,6 +107,7 @@ void GameState::move(Action action) {
   }
   case PASS: {
     ++passes_;
+
     if (passes_ >= 3) {
       done_ = true;
       float game_score = score();
@@ -119,7 +129,10 @@ void GameState::move(Action action) {
     boards_[0][action.get_x() * BOARD_SIZE + action.get_y()] =
         action.get_color();
     // turn_ is already updated to the opposite color
-    remove_dead_neighbors_(action.get_x(), action.get_y(), turn_);
+    hash_ ^= zobrist_->get_value(
+        (action.get_color() == BLACK ? 0 : BOARD_SIZE * BOARD_SIZE) +
+        (action.get_x() * BOARD_SIZE + action.get_y()));
+    remove_dead_neighbors_(action.get_x(), action.get_y(), turn_, true);
     break;
   }
   }
@@ -141,33 +154,29 @@ void GameState::move(Action action) {
   }
 }
 
+size_t GameState::hash() const { return hash_; }
+
 // X = black, O = white, . = empty
 std::string GameState::to_string() const {
-  // std::stringstream stream;
   std::string str;
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
     if (i % BOARD_SIZE == 0)
-      // stream << '\n';
       str += '\n';
     switch (boards_[0][i]) {
     case BLACK: {
-      // stream << 'X';
       str += 'X';
       break;
     }
     case WHITE: {
       str += 'O';
-      // stream << 'O';
       break;
     }
     case EMPTY: {
       str += '.';
-      // stream << '.';
       break;
     }
     }
   }
-  // return stream.str();
   return str;
 }
 
@@ -178,7 +187,7 @@ bool GameState::is_legal_play_(int x, int y, Color c) {
   Color original_board[BOARD_SIZE * BOARD_SIZE];
   memcpy(original_board, boards_[0], sizeof(original_board));
   boards_[0][x * BOARD_SIZE + y] = c;
-  remove_dead_neighbors_(x, y, (c == BLACK ? WHITE : BLACK));
+  remove_dead_neighbors_(x, y, (c == BLACK ? WHITE : BLACK), false);
   bool visited[BOARD_SIZE * BOARD_SIZE];
   memset(visited, false, sizeof(visited));
   std::set<int> chain;
@@ -200,7 +209,8 @@ bool GameState::is_legal_play_(int x, int y, Color c) {
   return true;
 }
 
-void GameState::remove_dead_neighbors_(int x, int y, Color opposite_color) {
+void GameState::remove_dead_neighbors_(int x, int y, Color opposite_color,
+                                       bool permanent) {
   for (const auto a : neighbors) {
     if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
         a[1] + y < BOARD_SIZE) {
@@ -212,6 +222,11 @@ void GameState::remove_dead_neighbors_(int x, int y, Color opposite_color) {
                      &liberties);
       if (liberties == 0) {
         for (const int &coord : chain) {
+          if (permanent) {
+            hash_ ^= zobrist_->get_value(
+                (boards_[0][coord] == BLACK ? 0 : BOARD_SIZE * BOARD_SIZE) +
+                coord);
+          }
           boards_[0][coord] = EMPTY;
         }
       }

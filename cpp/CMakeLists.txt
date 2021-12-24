@@ -21,7 +21,7 @@ set(SOURCES src/main.cpp
         src/player/RandomPlayer.cpp
         src/player/Evaluator.cpp
         src/player/MCTSPlayer.cpp
-        src/player/NNEvaluator.cpp)
+        src/player/NNEvaluator.cpp src/utils/Zobrist.cpp)
 add_executable(roost ${SOURCES})
 target_link_libraries(roost "${TORCH_LIBRARIES}")
 # target_link_libraries(roost PRIVATE roost_lib)
@@ -75,6 +75,7 @@ add_executable(
         src/player/Evaluator.cpp
         src/player/MCTSPlayer.cpp
         src/player/NNEvaluator.cpp
+        src/utils/Zobrist.cpp
         test/game_test.cpp
         test/player_test.cpp)
 target_link_libraries(

@@ -29,8 +29,8 @@ public:
   void reset() override;
 
 private:
-  float visit(const game::GameState& state);
-  void apply_dirichlet_noise_(const game::GameState& state);
+  float visit(const game::GameState &state);
+  void apply_dirichlet_noise_(const game::GameState &state);
   std::unique_ptr<Evaluator> evaluator_;
   // std::unordered_set<game::GameState> visited_;
   std::unordered_map<game::GameState, MCTSNode> map_;

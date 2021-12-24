@@ -7,6 +7,8 @@
 
 #include "Action.h"
 #include "game_defs.h"
+#include "utils/Zobrist.h"
+#include <memory>
 #include <set>
 #include <string>
 #include <vector>
@@ -15,7 +17,8 @@ namespace game {
 
 class GameState {
 public:
-  explicit GameState(float komi = 7.5);
+  explicit GameState(float komi = 7.5,
+                     const std::shared_ptr<Zobrist> &zobrist = nullptr);
   // int operator==(const GameState &other);
 
   // gets the turn; undefined behavior if game is done
@@ -36,6 +39,7 @@ public:
   // legal move (pass) does NOT include resign, which is always legal
   [[nodiscard]] std::vector<int> get_legal_action_indexes() const;
   void move(Action action);
+  size_t hash() const;
   [[nodiscard]] std::string to_string() const;
 
 private:
@@ -44,13 +48,16 @@ private:
   Color turn_;
   Color winner_;
   float komi_;
+  size_t hash_;
   unsigned turns_;
   unsigned passes_;
   bool done_;
   // this is valid UNLESS done_ = true
   std::vector<int> legal_action_idxes_;
+  std::shared_ptr<Zobrist> zobrist_;
   bool is_legal_play_(int x, int y, Color c);
-  void remove_dead_neighbors_(int x, int y, Color opposite_color);
+  void remove_dead_neighbors_(int x, int y, Color opposite_color,
+                              bool permanent = true);
   void dfs_liberties_(int x, int y, Color c, bool *visited,
                       std::set<int> *chain, int *liberties) const;
   void dfs_score_(int x, int y, Color opposite_color, bool *reachable) const;
@@ -61,9 +68,7 @@ private:
 // Implement std::hash on GameState
 // perhaps this could be improved
 template <> struct std::hash<game::GameState> {
-  std::size_t operator()(const game::GameState &g) const {
-    return std::hash<std::string>{}(g.to_string());
-  }
+  std::size_t operator()(const game::GameState &g) const { return g.hash(); }
 };
 
 // TODO: figure out why I couldn't just overload operator== here and fix into a
@@ -71,7 +76,7 @@ template <> struct std::hash<game::GameState> {
 template <> struct std::equal_to<game::GameState> {
   bool operator()(const game::GameState &lhs,
                   const game::GameState &rhs) const {
-    return lhs.to_string() == rhs.to_string() &&
+    return lhs.hash() == rhs.hash() &&
            lhs.get_legal_action_indexes() == rhs.get_legal_action_indexes();
   }
 };

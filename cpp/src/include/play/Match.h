@@ -12,7 +12,8 @@
 class Match {
 public:
   Match(std::unique_ptr<AbstractPlayer> &&black,
-        std::unique_ptr<AbstractPlayer> &&white, int num_games, std::string save_dir);
+        std::unique_ptr<AbstractPlayer> &&white, int num_games,
+        std::string save_dir);
   // returns number of games won by black
   int run();
 

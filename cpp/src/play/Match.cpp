@@ -4,18 +4,19 @@
 
 #include "play/Match.h"
 #include "game/GameState.h"
-#include <iostream>
-#include <fstream>
 #include <filesystem>
+#include <fstream>
+#include <iostream>
 #include <string>
 #include <utility>
 
 namespace fs = std::filesystem;
 
 Match::Match(std::unique_ptr<AbstractPlayer> &&black,
-             std::unique_ptr<AbstractPlayer> &&white, int num_games, std::string save_dir)
-    : black_(std::move(black)), white_(std::move(white)),
-      num_games_(num_games), save_dir_(std::move(save_dir)) {}
+             std::unique_ptr<AbstractPlayer> &&white, int num_games,
+             std::string save_dir)
+    : black_(std::move(black)), white_(std::move(white)), num_games_(num_games),
+      save_dir_(std::move(save_dir)) {}
 
 int Match::run() {
   auto starting_path = fs::current_path();
@@ -23,7 +24,8 @@ int Match::run() {
   fs::current_path(save_dir_);
   int black_wins = 0;
   for (int i = 0; i < num_games_; ++i) {
-    std::string sgf_string = "(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]\nRU[AGA]SZ[9]KM[7.50]\nPW[White]PB[Black]\n";
+    std::string sgf_string = "(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]\nRU[AGA]"
+                             "SZ[9]KM[7.50]\nPW[White]PB[Black]\n";
     game::GameState state;
     while (!state.done()) {
       if (state.get_turn() == game::Color::BLACK) {

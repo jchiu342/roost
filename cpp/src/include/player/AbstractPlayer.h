@@ -13,6 +13,7 @@ public:
   explicit AbstractPlayer(game::Color color) : color_(color) {}
   virtual game::Action get_move(game::GameState state) = 0;
   virtual void reset() {}
+
 protected:
   game::Color color_;
 };
