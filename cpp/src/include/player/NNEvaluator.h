@@ -16,7 +16,7 @@
 using namespace torch;
 
 class NNEvaluator : public Evaluator {
-  struct ConvBlock : nn::Module {
+  /* struct ConvBlock : nn::Module {
     ConvBlock() {
       conv1 = register_module(
           "conv1",
@@ -113,7 +113,7 @@ class NNEvaluator : public Evaluator {
     // ConvBlock conv;
     nn::Sequential blocks;
     // OutBlock out;
-  };
+  }; */
 
 public:
   explicit NNEvaluator(const std::string &input_file = "");

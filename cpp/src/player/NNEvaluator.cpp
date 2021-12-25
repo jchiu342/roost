@@ -69,6 +69,7 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   std::vector<float> policy;
   auto output_accessor = output.accessor<float, 1>();
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
+    assert(!std::isnan(output_accessor[i]));
     policy.push_back(output_accessor[i]);
   }
   return {policy, output_accessor[BOARD_SIZE * BOARD_SIZE + 1]};
