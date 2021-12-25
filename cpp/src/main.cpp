@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
       std::make_unique<NNEvaluator>("traced_model.pt");
   std::unique_ptr<AbstractPlayer> white =
       std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval));
-  Match m(std::move(black), std::move(white), 2, argv[1]);
+  Match m(std::move(black), std::move(white), 100, argv[1]);
   std::cout << m.run();
   return 0;
 }
