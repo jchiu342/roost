@@ -15,14 +15,15 @@ int main(int argc, char *argv[]) {
     return -1;
   }
   std::unique_ptr<Evaluator> b_eval =
-      std::make_unique<NNEvaluator>("traced_model.pt");
+      std::make_unique<NNEvaluator>("gen_9.pt");
   std::unique_ptr<AbstractPlayer> black =
-      std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval));
+      std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(b_eval));
   std::unique_ptr<Evaluator> w_eval =
       std::make_unique<NNEvaluator>("traced_model.pt");
   std::unique_ptr<AbstractPlayer> white =
-      std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval));
-  Match m(std::move(black), std::move(white), 100, argv[1]);
-  std::cout << m.run();
+      std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(w_eval));
+  Match m(std::move(white), std::move(black), 25, argv[1]);
+  int new_wins = m.run();
+  std::cout << new_wins << std::endl;
   return 0;
 }

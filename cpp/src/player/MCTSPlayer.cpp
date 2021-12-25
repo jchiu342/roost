@@ -11,7 +11,7 @@
 MCTSPlayer::MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
                        float cpuct, int playouts)
     : AbstractPlayer(c), evaluator_(std::move(evaluator)), cpuct_(cpuct),
-      playouts_(playouts), use_t1_(true), gen_(rd_()) {}
+      playouts_(playouts), alpha_(0.15), epsilon_(0.25), use_t1_(true), gen_(rd_()) {}
 
 game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(state.get_turn() == color_);

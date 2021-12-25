@@ -24,7 +24,7 @@ class MCTSPlayer : public AbstractPlayer {
 
 public:
   MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
-             float cpuct = 1.0f, int playouts = 250);
+             float cpuct = 1.5f, int playouts = 250);
   game::Action get_move(game::GameState state) override;
   void reset() override;
 
