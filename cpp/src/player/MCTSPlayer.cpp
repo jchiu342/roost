@@ -33,6 +33,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
     for (int legal_idx : state.get_legal_action_indexes()) {
       counter += map_[state].N[legal_idx];
       if (counter >= vis_num) {
+        assert(0 <= legal_idx && legal_idx <= BOARD_SIZE * BOARD_SIZE + 1);
         return {color_, legal_idx};
       }
     }
@@ -45,6 +46,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
       max_visits = map_[state].N[legal_idx];
     }
   }
+  assert(0 <= best_action_idx && best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1);
   return {color_, best_action_idx};
   // std::vector<int> legal_move_indexes = state.get_legal_action_indexes();
   // return {color_, legal_move_indexes[0]};
@@ -80,12 +82,25 @@ float MCTSPlayer::visit(const game::GameState &state) {
                   sqrt(std::accumulate(map_[state].N.begin(),
                                        map_[state].N.end(), 0)) /
                   (1 + map_[state].N[legal_idx]);
+    if (std::isnan(u) || u < -100000000.0f) {
+      std::cout << "bad u reached" << std::endl;
+      std::cout << map_[state].Q[legal_idx] << ' ' << cpuct_ << std::endl;
+      std::cout << map_[state].P[legal_idx] << ' ' << sqrt(std::accumulate(map_[state].N.begin(),
+                                                                           map_[state].N.end(), 0)) /
+                                                          (1 + map_[state].N[legal_idx]);
+    }
     if (u > max_u) {
       max_u = u;
       best_action_idx = legal_idx;
     }
   }
   game::GameState state_copy = state;
+  if (!(0 <= best_action_idx && best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1)) {
+    std::cout << best_action_idx << std::endl;
+    std::cout << state.get_legal_action_indexes().size() << std::endl;
+    assert(false);
+  }
+  // assert(0 <= best_action_idx && best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1);
   state_copy.move(game::Action(state.get_turn(), best_action_idx));
   float v = visit(state_copy);
   // if we're white, we want to store -v, since we're trying to minimize the
@@ -105,17 +120,31 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
   // generate dirichlet-distributed vector
   std::gamma_distribution<float> d(alpha_, 1);
   std::vector<float> values;
-  float sum = 0.0;
+  // TODO: figure out why sum = 0 gave some div by 0 errors
+  float sum = 1e-8;
   for (size_t i = 0; i < num_values; ++i) {
     values.push_back(d(gen_));
+    assert(!std::isnan(values[i]));
     sum += values[i];
   }
+  /*if (sum < 1e-8) {
+    for (int i = 0; i < num_values; i++) {
+      std::cout << values[i] << ' ';
+    }
+    std::cout << std::endl;
+  }*/
   for (size_t i = 0; i < num_values; ++i) {
     values[i] /= sum;
+    if (std::isnan(values[i])) {
+      std::cout << sum << std::endl;
+      assert(false);
+    }
   }
   // apply dirichlet to each P(s, a)
   for (size_t i = 0; i < num_values; ++i) {
+    assert(!std::isnan(map_[state].P[legal_actions[i]]));
     map_[state].P[legal_actions[i]] =
         (1 - epsilon_) * map_[state].P[legal_actions[i]] + epsilon_ * values[i];
+    assert(!std::isnan(map_[state].P[legal_actions[i]]));
   }
 }
