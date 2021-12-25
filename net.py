@@ -12,8 +12,8 @@ import numpy as np
 from macros import *
 matplotlib.use("Agg")
 
-BLOCKS = 5
-FILTERS = 64
+BLOCKS = 4
+FILTERS = 32
 
 
 # we require 5 channels: 2-history and 1 for whose move it is

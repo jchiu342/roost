@@ -34,9 +34,10 @@ def read_from_sgf(game_dir, save_train_file, save_val_file, train_split=0.8):
                                 action = Action(color, PASS)
                             else:
                                 action = Action(color, PLAY, x=(ord(line[3]) - ord('a')), y=(ord(line[4]) - ord('a')))
-                            states.append(get_nn_input(game))
-                            actions.append(from_action(action))
-                            game.move(action)
+                            if not game.done:
+                                states.append(get_nn_input(game))
+                                actions.append(from_action(action))
+                                game.move(action)
                         elif line.find("RE[") != -1:
                             winner = WHITE if line.find("RE[W") != -1 else BLACK
                     except EOFError:
