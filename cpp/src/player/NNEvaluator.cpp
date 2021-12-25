@@ -3,7 +3,7 @@
 //
 
 #include "player/NNEvaluator.h"
-#include <Torch/torch.h>
+#include <torch/torch.h>
 #include <torch/script.h>
 
 using namespace torch;

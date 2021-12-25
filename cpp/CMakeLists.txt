@@ -24,7 +24,6 @@ set(SOURCES src/main.cpp
         src/player/NNEvaluator.cpp src/utils/Zobrist.cpp)
 add_executable(roost ${SOURCES})
 target_link_libraries(roost "${TORCH_LIBRARIES}")
-# target_link_libraries(roost PRIVATE roost_lib)
 # add_executable(roost src/main.cpp src/game/Action.cpp src/game/Action.h src/game/Game.cpp src/game/Game.h src/game/game_defs.h)
 
 # locations to search for clang-format, clang-tidy
@@ -36,7 +35,7 @@ if (NOT DEFINED CLANG_FORMAT_BIN)
     # attempt to find the binary if user did not specify
     find_program(CLANG_FORMAT_BIN
             NAMES clang-format clang-format-8
-            HINTS ${BUSTUB_CLANG_SEARCH_PATH})
+            HINTS ${CLANG_SEARCH_PATH})
 endif()
 if ("${CLANG_FORMAT_BIN}" STREQUAL "CLANG_FORMAT_BIN-NOTFOUND")
     message(WARNING "Couldn't find clang-format.")
