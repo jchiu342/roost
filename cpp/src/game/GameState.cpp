@@ -31,7 +31,7 @@ Color GameState::get_turn() const {
   return turn_;
 }
 
-const Color *GameState::get_board(int i) const { return &boards_[i][0]; }
+const Color *GameState::get_board(int i) const { return &boards_[i][0][0]; }
 
 float GameState::get_komi() const { return komi_; }
 
@@ -40,15 +40,15 @@ bool GameState::done() const { return done_; }
 Color GameState::winner() const { return winner_; }
 
 float GameState::score() const {
-  bool white_reachable[BOARD_SIZE * BOARD_SIZE];
-  bool black_reachable[BOARD_SIZE * BOARD_SIZE];
+  bool white_reachable[BOARD_SIZE][BOARD_SIZE];
+  bool black_reachable[BOARD_SIZE][BOARD_SIZE];
   memset(white_reachable, false, sizeof(white_reachable));
   memset(black_reachable, false, sizeof(black_reachable));
   for (int x = 0; x < BOARD_SIZE; ++x) {
     for (int y = 0; y < BOARD_SIZE; ++y) {
-      if (boards_[0][x * BOARD_SIZE + y] == BLACK) {
+      if (boards_[0][x][y] == BLACK) {
         dfs_score_(x, y, WHITE, black_reachable);
-      } else if (boards_[0][x * BOARD_SIZE + y] == WHITE) {
+      } else if (boards_[0][x][y] == WHITE) {
         dfs_score_(x, y, BLACK, white_reachable);
       }
     }
@@ -56,11 +56,11 @@ float GameState::score() const {
   float count = -komi_;
   for (int x = 0; x < BOARD_SIZE; ++x) {
     for (int y = 0; y < BOARD_SIZE; ++y) {
-      if (white_reachable[x * BOARD_SIZE + y] &&
-          !black_reachable[x * BOARD_SIZE + y])
+      if (white_reachable[x][y] &&
+          !black_reachable[x][y])
         --count;
-      else if (black_reachable[x * BOARD_SIZE + y] &&
-               !white_reachable[x * BOARD_SIZE + y])
+      else if (black_reachable[x][y] &&
+               !white_reachable[x][y])
         ++count;
     }
   }
@@ -126,7 +126,7 @@ void GameState::move(Action action) {
       memcpy(boards_[i], boards_[i - 1], sizeof(boards_[i]));
     }
     // update current board
-    boards_[0][action.get_x() * BOARD_SIZE + action.get_y()] =
+    boards_[0][action.get_x()][action.get_y()] =
         action.get_color();
     // turn_ is already updated to the opposite color
     hash_ ^= zobrist_->get_value(
@@ -136,7 +136,13 @@ void GameState::move(Action action) {
     break;
   }
   }
+  // calculate all legal actions
   legal_action_idxes_.clear();
+  // get liberties of all groups on the board
+  /*int liberties[BOARD_SIZE * BOARD_SIZE];
+  for (int x = 0; x < BOARD_SIZE * BOARD_SIZE; ++i) {
+
+  }*/
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
     Action a(turn_, i);
     if (is_legal_play_(a.get_x(), a.get_y(), turn_)) {
@@ -159,22 +165,23 @@ size_t GameState::hash() const { return hash_; }
 // X = black, O = white, . = empty
 std::string GameState::to_string() const {
   std::string str;
-  for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
-    if (i % BOARD_SIZE == 0)
-      str += '\n';
-    switch (boards_[0][i]) {
-    case BLACK: {
-      str += 'X';
-      break;
-    }
-    case WHITE: {
-      str += 'O';
-      break;
-    }
-    case EMPTY: {
-      str += '.';
-      break;
-    }
+  for (int x = 0; x < BOARD_SIZE; ++x) {
+    str += '\n';
+    for (int y = 0; y < BOARD_SIZE; ++y) {
+      switch (boards_[0][x][y]) {
+        case BLACK: {
+          str += 'X';
+          break;
+        }
+        case WHITE: {
+          str += 'O';
+          break;
+        }
+        case EMPTY: {
+          str += '.';
+          break;
+        }
+      }
     }
   }
   return str;
@@ -182,15 +189,15 @@ std::string GameState::to_string() const {
 
 bool GameState::is_legal_play_(int x, int y, Color c) {
   assert(0 <= x && x < BOARD_SIZE && 0 <= y && y < BOARD_SIZE);
-  if (boards_[0][x * BOARD_SIZE + y] != EMPTY)
+  if (boards_[0][x][y] != EMPTY)
     return false;
-  Color original_board[BOARD_SIZE * BOARD_SIZE];
+  Color original_board[BOARD_SIZE][BOARD_SIZE];
   memcpy(original_board, boards_[0], sizeof(original_board));
-  boards_[0][x * BOARD_SIZE + y] = c;
+  boards_[0][x][y] = c;
   remove_dead_neighbors_(x, y, (c == BLACK ? WHITE : BLACK), false);
-  bool visited[BOARD_SIZE * BOARD_SIZE];
+  bool visited[BOARD_SIZE][BOARD_SIZE];
   memset(visited, false, sizeof(visited));
-  std::set<int> chain;
+  std::set<std::pair<int, int>> chain;
   int liberties = 0;
   dfs_liberties_(x, y, c, visited, &chain, &liberties);
   // remove chain size requirement for normal go.
@@ -215,36 +222,36 @@ void GameState::remove_dead_neighbors_(int x, int y, Color opposite_color,
     if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
         a[1] + y < BOARD_SIZE) {
       int liberties = 0;
-      bool visited[BOARD_SIZE * BOARD_SIZE];
+      bool visited[BOARD_SIZE][BOARD_SIZE];
       memset(visited, false, sizeof(visited));
-      std::set<int> chain;
+      std::set<std::pair<int, int>> chain;
       dfs_liberties_(a[0] + x, a[1] + y, opposite_color, visited, &chain,
                      &liberties);
       if (liberties == 0) {
-        for (const int &coord : chain) {
+        for (const std::pair<int, int> &coord : chain) {
           if (permanent) {
             hash_ ^= zobrist_->get_value(
-                (boards_[0][coord] == BLACK ? 0 : BOARD_SIZE * BOARD_SIZE) +
-                coord);
+                (boards_[0][coord.first][coord.second] == BLACK ? 0 : BOARD_SIZE * BOARD_SIZE) +
+                coord.first * BOARD_SIZE + coord.second);
           }
-          boards_[0][coord] = EMPTY;
+          boards_[0][coord.first][coord.second] = EMPTY;
         }
       }
     }
   }
 }
 
-void GameState::dfs_liberties_(int x, int y, Color c, bool *visited,
-                               std::set<int> *chain, int *liberties) const {
-  if (visited[x * BOARD_SIZE + y])
+void GameState::dfs_liberties_(int x, int y, Color c, bool visited[][BOARD_SIZE],
+                               std::set<std::pair<int, int>> *chain, int *liberties) const {
+  if (visited[x][y])
     return;
-  visited[x * BOARD_SIZE + y] = true;
-  if (boards_[0][x * BOARD_SIZE + y] == EMPTY) {
+  visited[x][y] = true;
+  if (boards_[0][x][y] == EMPTY) {
     *liberties = *liberties + 1;
     return;
   }
-  if (boards_[0][x * BOARD_SIZE + y] == c) {
-    chain->insert(x * BOARD_SIZE + y);
+  if (boards_[0][x][y] == c) {
+    chain->insert({x, y});
     for (const auto a : neighbors) {
       if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
           a[1] + y < BOARD_SIZE) {
@@ -255,15 +262,15 @@ void GameState::dfs_liberties_(int x, int y, Color c, bool *visited,
 }
 
 void GameState::dfs_score_(int x, int y, Color opposite_color,
-                           bool *reachable) const {
-  if (reachable[x * BOARD_SIZE + y]) {
+                           bool reachable[][BOARD_SIZE]) const {
+  if (reachable[x][y]) {
     return;
   }
-  reachable[x * BOARD_SIZE + y] = true;
+  reachable[x][y] = true;
   for (const auto a : neighbors) {
     if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
         a[1] + y < BOARD_SIZE &&
-        boards_[0][(a[0] + x) * BOARD_SIZE + a[1] + y] != opposite_color) {
+        boards_[0][(a[0] + x)][a[1] + y] != opposite_color) {
       dfs_score_(a[0] + x, a[1] + y, opposite_color, reachable);
     }
   }

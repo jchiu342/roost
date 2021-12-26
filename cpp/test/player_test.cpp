@@ -11,7 +11,7 @@
 #include "player/NNEvaluator.h"
 #include "play/Match.h"
 
-TEST(PlayerTest, DISABLED_PlayerGameTest) {
+TEST(PlayerTest, PlayerGameTest) {
   game::GameState state(7.5);
   RandomPlayer black_player(game::Color::BLACK);
   RandomPlayer white_player(game::Color::WHITE);
@@ -26,7 +26,7 @@ TEST(PlayerTest, DISABLED_PlayerGameTest) {
   std::cout << state.score() << std::endl;
 }
 
-TEST(PlayerTest, DISABLED_MCTSTest) {
+TEST(PlayerTest, MCTSTest) {
   game::GameState state(7.5);
   std::unique_ptr<Evaluator> eval = std::make_unique<Evaluator>();
   MCTSPlayer black_player(game::Color::BLACK, std::move(eval));
