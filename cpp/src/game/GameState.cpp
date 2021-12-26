@@ -174,6 +174,7 @@ void GameState::move(Action action) {
       // 4. if not a capture, it cannot be a suicide
       // 1
       if (boards_[0][x][y] != EMPTY) {
+        // std::cout << x << ' ' << y << ' ' << "NOTEMPTY" << std::endl;
         continue;
       }
       // 2
@@ -184,10 +185,35 @@ void GameState::move(Action action) {
       int liberties = 0;
       dfs_liberties_(x, y, turn_, visited, &chain, &liberties);
       if (chain.size() == 4) {
+        // std::cout << x << ' ' << y << ' ' << "CHAIN4" << std::endl;
         continue;
       }
       // 3
-      if (remove_dead_neighbors_(x, y, (turn_ == BLACK) ? WHITE : BLACK, false)) {
+      bool capture = false;
+      Color opposite = (turn_ == BLACK) ? WHITE : BLACK;
+      for (const auto a : neighbors) {
+        if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
+            a[1] + y < BOARD_SIZE && boards_[0][a[0] + x][a[1] + y] == opposite && all_liberties[a[0] + x][a[1] + y] == 1) {
+          capture = true;
+          dfs_remove_chain_(a[0] + x, a[1] + y, opposite);
+        }
+      }
+      if (capture) {
+        bool kill = false;
+        for (int i = 1; i < GAME_HISTORY_LEN; i += 2) {
+          if (memcmp(boards_[0], boards_[i], sizeof(boards_[0])) == 0) {
+            kill = true;
+            break;
+          }
+        }
+        if (kill) {
+          // std::cout << x << ' ' << y << ' ' << "REPEAT" << std::endl;
+          continue; }
+      } else if (liberties == 0) {
+        // std::cout << x << ' ' << y << ' ' << "NOLIBS" << std::endl;
+        continue;
+      }
+      /* if (remove_dead_neighbors_(x, y, (turn_ == BLACK) ? WHITE : BLACK, false)) {
         bool kill = false;
         for (int i = 1; i < GAME_HISTORY_LEN; i += 2) {
           if (memcmp(boards_[0], boards_[i], sizeof(original_board)) == 0) {
@@ -199,7 +225,7 @@ void GameState::move(Action action) {
       } else if (liberties == 0) {
         // 4
         continue;
-      }
+      } */
       legal_action_idxes_.push_back(x * BOARD_SIZE + y);
     }
   }
@@ -207,14 +233,38 @@ void GameState::move(Action action) {
   // restore original board
   memcpy(boards_[0], original_board, sizeof(original_board));
 
-  /*for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
+  /* for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
     Action a(turn_, i);
     if (std::find(std::begin(legal_action_idxes_), std::end(legal_action_idxes_), i) != std::end(legal_action_idxes_)) {
-      assert(is_legal_play_(a.get_x(), a.get_y(), turn_));
+      // assert(is_legal_play_(a.get_x(), a.get_y(), turn_));
+      if (!is_legal_play_(a.get_x(), a.get_y(), turn_)) {
+        std::cout << to_string() << std::endl;
+        std::cout << a.to_string() << std::endl;
+        std::cout << i << std::endl;
+        for (int x = 0; x < BOARD_SIZE; ++x) {
+          for (int y = 0; y < BOARD_SIZE; ++y) {
+            std::cout << all_liberties[x][y];
+          }
+          std::cout << std::endl;
+        }
+        assert(false);
+      }
     } else {
-      assert(!is_legal_play_(a.get_x(), a.get_y(), turn_));
+      // assert(!is_legal_play_(a.get_x(), a.get_y(), turn_));
+      if (is_legal_play_(a.get_x(), a.get_y(), turn_)) {
+        std::cout << to_string() << std::endl;
+        std::cout << a.to_string() << std::endl;
+        std::cout << i << std::endl;
+        for (int x = 0; x < BOARD_SIZE; ++x) {
+          for (int y = 0; y < BOARD_SIZE; ++y) {
+            std::cout << all_liberties[x][y];
+          }
+          std::cout << std::endl;
+        }
+        assert(false);
+      }
     }
-  }*/
+  } */
 
   /*for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
     Action a(turn_, i);
@@ -315,6 +365,15 @@ bool GameState::remove_dead_neighbors_(int x, int y, Color opposite_color,
     }
   }
   return return_value;
+}
+
+void GameState::dfs_remove_chain_(int x, int y, Color c) {
+  boards_[0][x][y] = EMPTY;
+  for (const auto a : neighbors) {
+    if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y && a[1] + y < BOARD_SIZE && boards_[0][a[0] + x][a[1] + y] == c) {
+      dfs_remove_chain_(a[0] + x, a[1] + y, c);
+    }
+  }
 }
 
 void GameState::dfs_liberties_(int x, int y, Color c, bool visited[][BOARD_SIZE],
