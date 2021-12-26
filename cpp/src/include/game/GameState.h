@@ -56,7 +56,8 @@ private:
   std::vector<int> legal_action_idxes_;
   std::shared_ptr<Zobrist> zobrist_;
   bool is_legal_play_(int x, int y, Color c);
-  void remove_dead_neighbors_(int x, int y, Color opposite_color,
+  // returns true if some neighbors were removed
+  bool remove_dead_neighbors_(int x, int y, Color opposite_color,
                               bool permanent = true);
   void dfs_liberties_(int x, int y, Color c, bool visited[][BOARD_SIZE],
                       std::set<std::pair<int, int>> *chain, int *liberties) const;

@@ -5,19 +5,28 @@
 #include <gtest/gtest.h>
 #include "game/Action.h"
 #include "game/GameState.h"
+#include <iostream>
 
 using namespace game;
 
 // Demonstrate ko logic
 TEST(GameTest, GameStateLogicTest) {
   GameState state(7.5);
+  std::cout << state.to_string() << std::endl;
   state.move(Action(Color::BLACK, ActionType::PLAY, 0, 2));
+  std::cout << state.to_string() << std::endl;
   state.move(Action(Color::WHITE, ActionType::PLAY, 0, 1));
+  std::cout << state.to_string() << std::endl;
   state.move(Action(Color::BLACK, ActionType::PLAY, 0, 0));
+  std::cout << state.to_string() << std::endl;
   state.move(Action(Color::WHITE, ActionType::PLAY, 1, 0));
+  std::cout << state.to_string() << std::endl;
   state.move(Action(Color::BLACK, ActionType::PLAY, 1, 1));
+  std::cout << state.to_string() << std::endl;
   state.move(Action(Color::WHITE, ActionType::PLAY, 8, 8));
+  std::cout << state.to_string() << std::endl;
   state.move(Action(Color::BLACK, ActionType::PLAY, 0, 0));
+  std::cout << state.to_string() << std::endl;
   EXPECT_EQ(false, state.is_legal_action(Action(Color::WHITE, ActionType::PLAY, 1, 0)));
   state.move(Action(Color::WHITE, ActionType::PASS));
   state.move(Action(Color::BLACK, ActionType::PASS));
