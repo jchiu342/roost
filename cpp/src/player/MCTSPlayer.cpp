@@ -10,8 +10,9 @@
 
 MCTSPlayer::MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
                        float cpuct, int playouts)
-    : AbstractPlayer(c), evaluator_(std::move(evaluator)), cpuct_(cpuct),
-      playouts_(playouts), alpha_(0.15), epsilon_(0.25), use_t1_(true), gen_(rd_()) {}
+    : AbstractPlayer(c), evaluator_(std::move(evaluator)), gen_(rd_()),
+      alpha_(0.15), epsilon_(0.25), cpuct_(cpuct), playouts_(playouts),
+      use_t1_(true) {}
 
 game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(state.get_turn() == color_);
@@ -46,7 +47,8 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
       max_visits = map_[state].N[legal_idx];
     }
   }
-  assert(0 <= best_action_idx && best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1);
+  assert(0 <= best_action_idx &&
+         best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1);
   return {color_, best_action_idx};
   // std::vector<int> legal_move_indexes = state.get_legal_action_indexes();
   // return {color_, legal_move_indexes[0]};
@@ -85,9 +87,10 @@ float MCTSPlayer::visit(const game::GameState &state) {
     if (std::isnan(u) || u < -100000000.0f) {
       std::cout << "bad u reached" << std::endl;
       std::cout << map_[state].Q[legal_idx] << ' ' << cpuct_ << std::endl;
-      std::cout << map_[state].P[legal_idx] << ' ' << sqrt(std::accumulate(map_[state].N.begin(),
-                                                                           map_[state].N.end(), 0)) /
-                                                          (1 + map_[state].N[legal_idx]);
+      std::cout << map_[state].P[legal_idx] << ' '
+                << sqrt(std::accumulate(map_[state].N.begin(),
+                                        map_[state].N.end(), 0)) /
+                       (1 + map_[state].N[legal_idx]);
     }
     if (u > max_u) {
       max_u = u;
@@ -95,12 +98,14 @@ float MCTSPlayer::visit(const game::GameState &state) {
     }
   }
   game::GameState state_copy = state;
-  if (!(0 <= best_action_idx && best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1)) {
+  if (!(0 <= best_action_idx &&
+        best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1)) {
     std::cout << best_action_idx << std::endl;
     std::cout << state.get_legal_action_indexes().size() << std::endl;
     assert(false);
   }
-  // assert(0 <= best_action_idx && best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1);
+  // assert(0 <= best_action_idx && best_action_idx <= BOARD_SIZE * BOARD_SIZE +
+  // 1);
   state_copy.move(game::Action(state.get_turn(), best_action_idx));
   float v = visit(state_copy);
   // if we're white, we want to store -v, since we're trying to minimize the

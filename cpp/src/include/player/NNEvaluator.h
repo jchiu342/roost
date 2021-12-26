@@ -5,9 +5,9 @@
 #ifndef ROOST_NNEVALUATOR_H
 #define ROOST_NNEVALUATOR_H
 #include "Evaluator.h"
+#include <memory>
 #include <torch/script.h>
 #include <torch/torch.h>
-#include <memory>
 #include <vector>
 
 #define NUM_BLOCKS 5

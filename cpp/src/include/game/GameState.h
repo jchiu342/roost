@@ -61,8 +61,10 @@ private:
                               bool permanent = true);
   void dfs_remove_chain_(int x, int y, Color c);
   void dfs_liberties_(int x, int y, Color c, bool visited[][BOARD_SIZE],
-                      std::set<std::pair<int, int>> *chain, int *liberties) const;
-  void dfs_score_(int x, int y, Color opposite_color, bool reachable[][BOARD_SIZE]) const;
+                      std::set<std::pair<int, int>> *chain,
+                      int *liberties) const;
+  void dfs_score_(int x, int y, Color opposite_color,
+                  bool reachable[][BOARD_SIZE]) const;
 };
 
 } // namespace game
