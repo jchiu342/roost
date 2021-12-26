@@ -4,14 +4,20 @@
 #include "player/MCTSPlayer.h"
 #include "player/NNEvaluator.h"
 #include "player/RandomPlayer.h"
+#include <filesystem>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <thread>
 
 using namespace game;
+namespace fs = std::filesystem;
 
-void generate_data(int num_threads, int games, int playouts, const std::string &model_file, const std::string &save_dir) {
-  auto task = [&, playouts, model_file, save_dir](int tid, int games) {
+void generate_data(int num_threads, int games, int playouts, std::string model_file, const std::string &save_dir) {
+  // std::mutex mtx;
+  model_file = "../" + model_file;
+  auto task = [&, num_threads, playouts, model_file, save_dir](int tid, int games) {
+      // mtx.lock();
       std::unique_ptr<Evaluator> b_eval =
               std::make_unique<NNEvaluator>(model_file);
       std::unique_ptr<AbstractPlayer> black =
@@ -20,19 +26,23 @@ void generate_data(int num_threads, int games, int playouts, const std::string &
               std::make_unique<NNEvaluator>(model_file);
       std::unique_ptr<AbstractPlayer> white =
               std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), 1.5, playouts);
-      std::string personal_save_dir = save_dir + to_string(tid);
-      Match m(std::move(black), std::move(white), games, personal_save_dir);
+      // mtx.unlock();
+      Match m(std::move(black), std::move(white), games, num_threads, tid);
       m.run();
   };
-  int num_games = games / num_threads;
+  auto starting_path = fs::current_path();
+  fs::create_directory(save_dir);
+  fs::current_path(save_dir);
+  // int num_games = games / num_threads;
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
   for (int i = 0; i < num_threads; ++i) {
-    threads.emplace_back(std::thread{task, i, num_games});
+    threads.emplace_back(std::thread{task, i, games});
   }
   for (int i = 0; i < num_threads; ++i) {
     threads[i].join();
   }
+  fs::current_path(starting_path);
 }
 
 int main(int argc, char *argv[]) {

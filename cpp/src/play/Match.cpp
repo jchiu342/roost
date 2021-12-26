@@ -4,26 +4,26 @@
 
 #include "play/Match.h"
 #include "game/GameState.h"
-#include <filesystem>
+// #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <utility>
 
-namespace fs = std::filesystem;
+// namespace fs = std::filesystem;
 
 Match::Match(std::unique_ptr<AbstractPlayer> &&black,
-             std::unique_ptr<AbstractPlayer> &&white, int num_games,
-             std::string save_dir)
-    : black_(std::move(black)), white_(std::move(white)), num_games_(num_games),
-      save_dir_(std::move(save_dir)) {}
+             std::unique_ptr<AbstractPlayer> &&white, int num_games, int num_threads,
+             int tid)
+    : black_(std::move(black)), white_(std::move(white)), tid_(tid),
+      num_games_(num_games), num_threads_(num_threads) {}
 
 int Match::run() {
-  auto starting_path = fs::current_path();
-  fs::create_directory(save_dir_);
-  fs::current_path(save_dir_);
+  // auto starting_path = fs::current_path();
+  // fs::create_directory(save_dir_);
+  // fs::current_path(save_dir_);
   int black_wins = 0;
-  for (int i = 0; i < num_games_; ++i) {
+  for (int i = tid_; i < num_games_; i += num_threads_) {
     std::string sgf_string = "(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]\nRU[AGA]"
                              "SZ[9]KM[7.50]\nPW[White]PB[Black]\n";
     game::GameState state;
@@ -55,6 +55,6 @@ int Match::run() {
 
     std::cout << state.score() << std::endl;
   }
-  fs::current_path(starting_path);
+  // fs::current_path(starting_path);
   return black_wins;
 }
