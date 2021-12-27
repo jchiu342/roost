@@ -5,6 +5,7 @@ from tqdm import tqdm
 import torch
 import torchvision
 from torch.utils.tensorboard import SummaryWriter
+import os
 from os.path import exists
 
 
@@ -16,19 +17,22 @@ BATCH_SIZE = 2048
 
 
 class GameDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset_file):
+    def __init__(self, dataset_dir):
         self.examples = []
-        with open(dataset_file, "rb") as fin:
-            while True:
-                try:
-                    s = torch.from_numpy(np.load(fin))
-                    a = torch.from_numpy(np.load(fin)).type(torch.long)
-                    w = torch.from_numpy(np.load(fin)).type(torch.float32)
-                    assert(len(s) == len(a))
-                    for i in range(len(s)):
-                        self.examples.append((s[i], a[i], w))
-                except ValueError:
-                    break
+        for root, dirs, files in os.walk(dataset_dir, topdown=False):
+            for name in tqdm(files):
+                with open(os.path.join(root, name), 'rb') as fin:
+                    while True:
+                        try:
+                            s = torch.from_numpy(np.load(fin))
+                            a = torch.from_numpy(np.load(fin)).type(torch.long)
+                            w = torch.from_numpy(np.load(fin)).type(torch.float32)
+                            assert(len(s) == len(a))
+                            for i in range(len(s)):
+                                self.examples.append((s[i], a[i], w))
+                        except ValueError:
+                            break
+        print("Loaded " + dataset_dir + ", number of examples: " + str(len(self.examples)))
 
     def __len__(self):
         return len(self.examples)
@@ -75,14 +79,14 @@ def train(trainset, valset, model, loss_fn, optimizer):
         torch.save(model.state_dict(), MODEL_SAVE_FILE)
 
 
-def start_train(train_file, val_file):
+def start_train(train_dir, val_dir):
     trainset = torch.utils.data.DataLoader(
-        GameDataset(train_file),
+        GameDataset(train_dir),
         shuffle=True,
         batch_size=BATCH_SIZE
     )
     valset = torch.utils.data.DataLoader(
-        GameDataset(val_file),
+        GameDataset(val_dir),
         batch_size=BATCH_SIZE
     )
     model = ConnectNet().to(DEVICE)
@@ -95,9 +99,10 @@ def start_train(train_file, val_file):
 
 
 def save_trace(model, valset, trace_file):
-    for state, action, result in tqdm(valset):
+    for state, action, result in valset:
         traced_script_module = torch.jit.trace(model, state.to(DEVICE))
         traced_script_module.save(trace_file)
+        print("saved " + trace_file)
         break
 
 
