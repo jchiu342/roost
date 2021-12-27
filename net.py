@@ -12,15 +12,14 @@ import numpy as np
 from macros import *
 matplotlib.use("Agg")
 
-BLOCKS = 4
-FILTERS = 32
+BLOCKS = 5
+FILTERS = 64
 
 
 # we require 5 channels: 2-history and 1 for whose move it is
 class ConvBlock(nn.Module):
     def __init__(self):
         super(ConvBlock, self).__init__()
-        self.action_size = 7
         self.conv1 = nn.Conv2d(5, FILTERS, 3, stride=1, padding=1)
         self.bn1 = nn.BatchNorm2d(FILTERS)
 

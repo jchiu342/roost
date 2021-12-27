@@ -11,7 +11,7 @@ from os.path import exists
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 MODEL_SAVE_FILE = "test0.pth"
-EPOCH = 10
+EPOCH = 20
 BATCH_SIZE = 2048
 
 
@@ -51,7 +51,7 @@ def val(valset, model, loss_fn, log_iter=0):
     avg_loss = round(total_loss / it, 5)
     print(" val loss: ", avg_loss)
     LOGGER.add_scalar("Val loss", avg_loss, log_iter)
-    save_trace(model, valset, "gen_" + str(log_iter) + ".pt")
+    save_trace(model, valset, "5x64_" + str(log_iter) + ".pt")
 
 
 def train(trainset, valset, model, loss_fn, optimizer):
@@ -87,7 +87,7 @@ def start_train(train_file, val_file):
     )
     model = ConnectNet().to(DEVICE)
     loss_fn = AlphaLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.001, weight_decay=1e-4)
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.001, weight_decay=1e-4)
     if not exists(MODEL_SAVE_FILE):
         temp = open(MODEL_SAVE_FILE, "w")
         temp.close()

@@ -9,25 +9,24 @@
 #include <numeric>
 
 MCTSPlayer::MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
-                       float cpuct, int playouts)
+                       float cpuct, int playouts, bool eval_mode)
     : AbstractPlayer(c), evaluator_(std::move(evaluator)), gen_(rd_()),
       alpha_(0.15), epsilon_(0.25), cpuct_(cpuct), playouts_(playouts),
-      use_t1_(true) {}
+      eval_mode_(eval_mode){}
 
 game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(state.get_turn() == color_);
   visit(state);
   // apply dirichlet to root node
-  apply_dirichlet_noise_(state);
+  if (!eval_mode_) {
+    apply_dirichlet_noise_(state);
+  }
   for (int i = 1; i < playouts_; ++i) {
     visit(state);
   }
-  // for (int i = 0; i < map_[state].N.size(); ++i) {
-  //   std::cout << i << ' ' << map_[state].N[i] << "; ";
-  // }
-  // std::cout << std::endl;
-  // if temperature = 1, we simply choose move proportional to # of visits
-  if (use_t1_) {
+  // not sure how randommness is achieved in AGZ for eval games, so I keep temp = 1 for first 10 moves
+  // in eval games
+  if (!eval_mode_ || state.get_num_turns() < 10) {
     std::uniform_int_distribution<> dist(1, playouts_);
     int vis_num = dist(gen_);
     int counter = 0;

@@ -24,7 +24,7 @@ class MCTSPlayer : public AbstractPlayer {
 
 public:
   MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
-             float cpuct = 1.5f, int playouts = 250);
+             float cpuct = 1.5f, int playouts = 250, bool eval_mode = false);
   game::Action get_move(game::GameState state) override;
   void reset() override;
 
@@ -43,7 +43,7 @@ private:
   float cpuct_;
 
   int playouts_;
-  bool use_t1_;
+  bool eval_mode_;
 };
 
 #endif // ROOST_MCTSPLAYER_H

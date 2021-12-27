@@ -23,6 +23,7 @@ public:
 
   // gets the turn; undefined behavior if game is done
   [[nodiscard]] Color get_turn() const;
+  [[nodiscard]] int get_num_turns() const;
   [[nodiscard]] const Color *get_board(int i) const;
   // gets the komi
   [[nodiscard]] float get_komi() const;
@@ -39,7 +40,7 @@ public:
   // legal move (pass) does NOT include resign, which is always legal
   [[nodiscard]] std::vector<int> get_legal_action_indexes() const;
   void move(Action action);
-  size_t hash() const;
+  [[nodiscard]] size_t hash() const;
   [[nodiscard]] std::string to_string() const;
 
 private:
