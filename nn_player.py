@@ -37,7 +37,6 @@ def get_nn_input(game):
                     ret[3][i][j] = 1
                 elif game.prev_game_state.board[i][j] == WHITE:
                     ret[2][i][j] = 1
-                ret[4][i][j] = 1
     return ret
 
 
