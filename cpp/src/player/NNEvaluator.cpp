@@ -12,8 +12,10 @@ NNEvaluator::NNEvaluator(const std::string &input_file) {
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
     module_ = torch::jit::load(input_file);
+    // module_.to(at::kCUDA);
   } catch (const c10::Error &e) {
     std::cerr << "error loading the model\n";
+    std::cout << e.what() << std::endl;
     assert(false);
     // return -1;
   }
@@ -62,15 +64,19 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
     }
   }
   std::vector<torch::jit::IValue> inputs;
-  inputs.push_back(input);
+  inputs.emplace_back(input);
 
-  Tensor output = module_.forward(inputs).toTensor();
-  assert(output.size(0) == BOARD_SIZE * BOARD_SIZE + 2);
+  auto output = module_.forward(inputs).toTuple()->elements();
+  assert(output.size() == 2);
+  auto policy_tensor = output[0].toTensor();
+  auto value_tensor = output[1].toTensor();
   std::vector<float> policy;
-  auto output_accessor = output.accessor<float, 1>();
+  policy.reserve(BOARD_SIZE * BOARD_SIZE + 1);
+  // std::cout << state.to_string() << std::endl;
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
-    assert(!std::isnan(output_accessor[i]));
-    policy.push_back(output_accessor[i]);
+    policy.push_back(policy_tensor[0][i].item<float>());
+    // std::cout << i << ' ' << policy[i] << std::endl;
   }
-  return {policy, output_accessor[BOARD_SIZE * BOARD_SIZE + 1]};
+  // std::cout << "value: " << value_tensor.item<float>();*/
+  return {policy, value_tensor.item<float>()};
 }

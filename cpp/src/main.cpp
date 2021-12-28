@@ -48,15 +48,15 @@ void generate_data(int num_threads, int games, int playouts, std::string model_f
 int test_strength(std::string black_model_file, std::string white_model_file, std::string save_dir) {
   black_model_file = "../" + black_model_file;
   white_model_file = "../" + white_model_file;
-  int num_threads = 4;
+  int num_threads = 16;
   int games = 64;
   int black_wins = 0;
   std::mutex mtx;
   auto task = [black_model_file, white_model_file, num_threads, &black_wins, &mtx](int tid, int games) {
       std::unique_ptr<Evaluator> b_eval = std::make_unique<NNEvaluator>(black_model_file);
       std::unique_ptr<Evaluator> w_eval = std::make_unique<NNEvaluator>(white_model_file);
-      std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), 1.5, 1000, true);
-      std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), 1.5, 1000, true);
+      std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), 1.5, 150, true);
+      std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), 1.5, 20, true);
       Match m(std::move(black), std::move(white), games, num_threads, tid);
       int b_wins = m.run();
       mtx.lock();
@@ -89,17 +89,18 @@ int main(int argc, char *argv[]) {
 
   // generate_data(num_threads, num_games, 1000, "traced_model.pt", "speedtest" + to_string(num_threads));*/
   int x = test_strength(argv[1], argv[2], "test_1");
-  std::cout <<  x + (64 - test_strength(argv[2], argv[1], "test_2")) << std::endl;
-  /*std::unique_ptr<Evaluator> b_eval =
-      std::make_unique<NNEvaluator>("traced_model.pt");
-  std::unique_ptr<AbstractPlayer> black =
-      std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval));
-  std::unique_ptr<Evaluator> w_eval =
-      std::make_unique<NNEvaluator>("traced_model.pt");
-  std::unique_ptr<AbstractPlayer> white =
-      std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval));
-  Match m(std::move(black), std::move(white), 2, argv[1]);
-  int new_wins = m.run();
-  std::cout << new_wins << std::endl; */
+  std::cout << x << std::endl;
+  // std::cout <<  x + (64 - test_strength(argv[2], argv[1], "test_2")) << std::endl;
+  /*std::unique_ptr<Evaluator> b_eval = std::make_unique<NNEvaluator>("4x323.pt");
+  std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), 1.5, 2, true);
+  std::unique_ptr<AbstractPlayer> white = std::make_unique<RandomPlayer>(game::Color::WHITE);
+  Match m(std::move(black),std::move(white), 128, 1, 0);
+  int net_wins = m.run();
+  std::unique_ptr<Evaluator> w_eval = std::make_unique<NNEvaluator>("4x323.pt");
+  std::unique_ptr<AbstractPlayer> w_mcts = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), 1.5, 2, true);
+  std::unique_ptr<AbstractPlayer> b_random = std::make_unique<RandomPlayer>(game::Color::BLACK);
+  Match m2(std::move(b_random),std::move(w_mcts), 128, 1, 0);
+  net_wins += (128 - m2.run());
+  std::cout << net_wins << std::endl;*/
   return 0;
 }

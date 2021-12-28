@@ -13,7 +13,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 MODEL_SAVE_FILE = "model_state_dict.pth"
 EPOCH = 20
-BATCH_SIZE = 1024
+BATCH_SIZE = 256
 
 
 class GameDataset(torch.utils.data.Dataset):
@@ -41,7 +41,7 @@ class GameDataset(torch.utils.data.Dataset):
         return self.examples[idx]
 
 
-def val(valset, model, loss_fn, log_iter=0):
+def val(valset, model, loss_fn, save_name, log_iter=0):
     total_loss = 0
     it = 0
     model.eval()
@@ -55,12 +55,12 @@ def val(valset, model, loss_fn, log_iter=0):
     avg_loss = round(total_loss / it, 5)
     print(" val loss: ", avg_loss)
     LOGGER.add_scalar("Val loss", avg_loss, log_iter)
-    save_trace(model, valset, "5x64_" + str(log_iter) + ".pt")
+    save_trace(model, valset, save_name + str(log_iter) + ".pt")
 
 
-def train(trainset, valset, model, loss_fn, optimizer):
+def train(trainset, valset, model, loss_fn, optimizer, save_name):
     for i in range(EPOCH):
-        val(valset, model, loss_fn, i)
+        val(valset, model, loss_fn, save_name, i)
         model.train()
         total_loss = 0
         it = 0
@@ -79,7 +79,7 @@ def train(trainset, valset, model, loss_fn, optimizer):
         torch.save(model.state_dict(), MODEL_SAVE_FILE)
 
 
-def start_train(train_dir, val_dir):
+def start_train(train_dir, val_dir, save_name):
     trainset = torch.utils.data.DataLoader(
         GameDataset(train_dir),
         shuffle=True,
@@ -89,21 +89,27 @@ def start_train(train_dir, val_dir):
         GameDataset(val_dir),
         batch_size=BATCH_SIZE
     )
-    model = ConnectNet().to(DEVICE)
+    # board size, # filters, # blocks
+    model = ConnectNet(9, 32, 4).to(DEVICE)
     loss_fn = AlphaLoss()
     optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
     if not exists(MODEL_SAVE_FILE):
         temp = open(MODEL_SAVE_FILE, "w")
         temp.close()
-    train(trainset, valset, model, loss_fn, optimizer)
+    train(trainset, valset, model, loss_fn, optimizer, save_name)
 
 
 def save_trace(model, valset, trace_file):
-    for state, action, result in tqdm(valset):
-        traced_script_module = torch.jit.trace(model, state.to(DEVICE))
-        traced_script_module.save(trace_file)
-        print("saved " + trace_file)
-        break
+    model = model.to(torch.device("cpu"))
+    scripted_model = torch.jit.script(model)
+    scripted_model.save(trace_file)
+    print("saved " + trace_file)
+    model = model.to(DEVICE)
+    # for state, action, result in tqdm(valset):
+    #    traced_script_module = torch.jit.trace(model, state.to(DEVICE))
+    #    traced_script_module.save(trace_file)
+    #    print("saved " + trace_file)
+    #    break
 
 
 # def trace(val_file, trace_file):

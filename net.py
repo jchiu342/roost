@@ -12,32 +12,30 @@ import numpy as np
 from macros import *
 matplotlib.use("Agg")
 
-BLOCKS = 5
-FILTERS = 64
-
 
 # we require 5 channels: 2-history and 1 for whose move it is
 class ConvBlock(nn.Module):
-    def __init__(self):
+    def __init__(self, num_filters, board_size):
         super(ConvBlock, self).__init__()
-        self.conv1 = nn.Conv2d(5, FILTERS, 3, stride=1, padding=1)
-        self.bn1 = nn.BatchNorm2d(FILTERS)
+        self.conv1 = nn.Conv2d(5, num_filters, 3, stride=1, padding=1)
+        self.bn1 = nn.BatchNorm2d(num_filters)
+        self.board_size = board_size
 
     def forward(self, s):
-        s = s.view(-1, 5, BOARD_SIZE, BOARD_SIZE)  # batch_size x channels x board_x x board_y
+        s = s.view(-1, 5, self.board_size, self.board_size)  # batch_size x channels x board_x x board_y
         s = F.relu(self.bn1(self.conv1(s)))
         return s
 
 
 class ResBlock(nn.Module):
-    def __init__(self, inplanes=FILTERS, planes=FILTERS, stride=1, downsample=None):
+    def __init__(self, num_filters, stride=1, downsample=None):
         super().__init__()
-        self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=3, stride=stride,
+        self.conv1 = nn.Conv2d(num_filters, num_filters, kernel_size=3, stride=stride,
                                padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(planes)
-        self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride,
+        self.bn1 = nn.BatchNorm2d(num_filters)
+        self.conv2 = nn.Conv2d(num_filters, num_filters, kernel_size=3, stride=stride,
                                padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(planes)
+        self.bn2 = nn.BatchNorm2d(num_filters)
 
     def forward(self, x):
         residual = x
@@ -51,38 +49,39 @@ class ResBlock(nn.Module):
 
 
 class OutBlock(nn.Module):
-    def __init__(self):
+    def __init__(self, board_size, num_filters):
         super().__init__()
-        self.conv = nn.Conv2d(FILTERS, 1, kernel_size=1)  # value head
+        self.board_size = board_size
+        self.conv = nn.Conv2d(num_filters, 1, kernel_size=1)  # value head
         self.bn = nn.BatchNorm2d(1)
-        self.fc1 = nn.Linear(BOARD_SIZE * BOARD_SIZE, FILTERS)
-        self.fc2 = nn.Linear(FILTERS, 1)
+        self.fc1 = nn.Linear(board_size * board_size, num_filters)
+        self.fc2 = nn.Linear(num_filters, 1)
 
-        self.conv1 = nn.Conv2d(FILTERS, 2, kernel_size=1)  # policy head
+        self.conv1 = nn.Conv2d(num_filters, 2, kernel_size=1)  # policy head
         self.bn1 = nn.BatchNorm2d(2)
         self.logsoftmax = nn.LogSoftmax(dim=1)
-        self.fc = nn.Linear(BOARD_SIZE * BOARD_SIZE * 2, BOARD_SIZE * BOARD_SIZE + 1)
+        self.fc = nn.Linear(board_size * board_size * 2, board_size * board_size + 1)
 
     def forward(self, s):
         v = F.relu(self.bn(self.conv(s)))  # value head
-        v = v.view(-1, BOARD_SIZE * BOARD_SIZE)  # batch_size X channel X height X width
+        v = v.view(-1, self.board_size * self.board_size)  # batch_size X channel X height X width
         v = F.relu(self.fc1(v))
         v = torch.tanh(self.fc2(v))
 
         p = F.relu(self.bn1(self.conv1(s)))  # policy head
-        p = p.view(-1, BOARD_SIZE * BOARD_SIZE * 2)
+        p = p.view(-1, self.board_size * self.board_size * 2)
         p = self.fc(p)
         p = self.logsoftmax(p).exp()
         return p, v
 
 
 class ConnectNet(nn.Module):
-    def __init__(self):
+    def __init__(self, board_size, num_filters, num_blocks):
         super(ConnectNet, self).__init__()
-        self.blocks = [ConvBlock()]
-        for i in range(BLOCKS):
-            self.blocks.append(ResBlock())
-        self.blocks.append(OutBlock())
+        self.blocks = [ConvBlock(num_filters, board_size)]
+        for i in range(num_blocks):
+            self.blocks.append(ResBlock(num_filters))
+        self.blocks.append(OutBlock(board_size, num_filters))
         self.blocks = torch.nn.Sequential(*self.blocks)
 
     def forward(self, s):

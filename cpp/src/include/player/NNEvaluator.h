@@ -117,7 +117,7 @@ class NNEvaluator : public Evaluator {
 
 public:
   explicit NNEvaluator(const std::string &input_file = "");
-  Evaluation Evaluate(const game::GameState &state);
+  Evaluation Evaluate(const game::GameState &state) override;
 
 private:
   torch::jit::script::Module module_;

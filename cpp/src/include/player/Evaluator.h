@@ -22,7 +22,7 @@ public:
     // value ranges from 1 (black win) to -1 (white win)
     float value_;
   };
-  Evaluation evaluate(const game::GameState &state);
+  virtual Evaluation Evaluate(const game::GameState &state) = 0;
 };
 
 #endif // ROOST_EVALUATOR_H

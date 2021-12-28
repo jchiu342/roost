@@ -64,33 +64,27 @@ float MCTSPlayer::visit(const game::GameState &state) {
     // initialize everything to 0
     map_[state].N.assign(BOARD_SIZE * BOARD_SIZE + 1, 0);
     map_[state].Q.assign(BOARD_SIZE * BOARD_SIZE + 1, 0.0f);
-    Evaluator::Evaluation eval = evaluator_->evaluate(state);
+    Evaluator::Evaluation eval = evaluator_->Evaluate(state);
     // cache our policy and value
     map_[state].P = eval.policy_;
-    // we want to return negative value bc other player is trying to minimize
-    // our score
     return eval.value_;
   }
-
+  // std::cout << "map contains state already" << std::endl;
   // get best child and visit it
   // equivalent to neginf
   float max_u = -100000000.0f;
   int best_action_idx = -1;
   for (int legal_idx : state.get_legal_action_indexes()) {
     // u = Q(s, a) + cpuct * P(s, a) * sqrt(sum_a N(s, a)) / (1 + N(s, a))
+    // TODO: correct this math. currently this does sum_a N(s, a) + 1 to explore
+    // the max-policy action on the first playout, but this doesn't seem to be
+    // talked about anywhere
     float u = map_[state].Q[legal_idx] +
               cpuct_ * map_[state].P[legal_idx] *
                   sqrt(std::accumulate(map_[state].N.begin(),
-                                       map_[state].N.end(), 0)) /
+                                       map_[state].N.end(), 1)) /
                   (1 + map_[state].N[legal_idx]);
-    if (std::isnan(u) || u < -100000000.0f) {
-      std::cout << "bad u reached" << std::endl;
-      std::cout << map_[state].Q[legal_idx] << ' ' << cpuct_ << std::endl;
-      std::cout << map_[state].P[legal_idx] << ' '
-                << sqrt(std::accumulate(map_[state].N.begin(),
-                                        map_[state].N.end(), 0)) /
-                       (1 + map_[state].N[legal_idx]);
-    }
+    // std::cout << u << std::endl;
     if (u > max_u) {
       max_u = u;
       best_action_idx = legal_idx;
