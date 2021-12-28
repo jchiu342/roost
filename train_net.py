@@ -11,7 +11,7 @@ from os.path import exists
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
-MODEL_SAVE_FILE = "test0.pth"
+MODEL_SAVE_FILE = "model_state_dict.pth"
 EPOCH = 20
 BATCH_SIZE = 1024
 
