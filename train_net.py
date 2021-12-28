@@ -13,7 +13,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 MODEL_SAVE_FILE = "test0.pth"
 EPOCH = 20
-BATCH_SIZE = 2048
+BATCH_SIZE = 1024
 
 
 class GameDataset(torch.utils.data.Dataset):
@@ -91,7 +91,7 @@ def start_train(train_dir, val_dir):
     )
     model = ConnectNet().to(DEVICE)
     loss_fn = AlphaLoss()
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.001, weight_decay=1e-4)
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
     if not exists(MODEL_SAVE_FILE):
         temp = open(MODEL_SAVE_FILE, "w")
         temp.close()
@@ -99,7 +99,7 @@ def start_train(train_dir, val_dir):
 
 
 def save_trace(model, valset, trace_file):
-    for state, action, result in valset:
+    for state, action, result in tqdm(valset):
         traced_script_module = torch.jit.trace(model, state.to(DEVICE))
         traced_script_module.save(trace_file)
         print("saved " + trace_file)
