@@ -56,7 +56,7 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
     avg_loss = round(total_loss / it, 5)
     print(" val loss: ", avg_loss)
     LOGGER.add_scalar("Val loss", avg_loss, log_iter)
-    save_trace(model, valset, save_name + str(log_iter) + ".pt")
+    save_trace(model, valset, save_name, log_iter)
 
 
 def train(trainset, valset, model, loss_fn, optimizer, save_name):
@@ -91,7 +91,7 @@ def start_train(train_dir, val_dir, save_name):
         batch_size=BATCH_SIZE
     )
     # board size, # filters, # blocks
-    model = ConnectNet(9, 32, 4).to(DEVICE)
+    model = ConnectNet(9, 32, 3).to(DEVICE)
     # model = ConnectNet(9, 64, 5)
     # model.load_state_dict(torch.load("model_state_dict.pth"))
     model = model.to(DEVICE)
