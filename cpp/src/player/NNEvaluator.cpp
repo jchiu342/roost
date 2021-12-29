@@ -12,6 +12,7 @@ NNEvaluator::NNEvaluator(const std::string &input_file) {
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
     module_ = torch::jit::load(input_file);
+    module_.eval();
     // module_.to(at::kCUDA);
   } catch (const c10::Error &e) {
     std::cerr << "error loading the model\n";
@@ -33,6 +34,7 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   if (state.done()) {
     return {{}, (state.winner() == game::BLACK ? 1.0f : -1.0f)};
   }
+  torch::NoGradGuard no_grad;
   Tensor input = torch::zeros({5, BOARD_SIZE, BOARD_SIZE});
   const game::Color *index_0 = state.get_board(0);
   if (state.get_turn() == game::BLACK) {
