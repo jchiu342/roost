@@ -14,6 +14,7 @@ LOGGER = SummaryWriter("runs/testrun")
 MODEL_SAVE_FILE = "model_state_dict.pth"
 EPOCH = 20
 BATCH_SIZE = 256
+SAMPLES_PER_EPOCH = 1000
 
 
 class GameDataset(torch.utils.data.Dataset):
@@ -63,17 +64,17 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
         val(valset, model, loss_fn, save_name, i)
         model.train()
         total_loss = 0
-        it = 0
-        for state, action, result in tqdm(trainset):
+        iterator = iter(trainset)
+        for i in tqdm(range(SAMPLES_PER_EPOCH)):
+            state, action, result = iterator.next()
             s, a, r = state.to(DEVICE), action.to(DEVICE), result.to(DEVICE)
             pred_policy, pred_value = model(s)
             loss = loss_fn(pred_policy, a, pred_value, r)
             total_loss += loss.item()
-            it += 1
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-        avg_loss = round(total_loss / it, 5)
+        avg_loss = round(total_loss / SAMPLES_PER_EPOCH, 5)
         print(" train loss: ", avg_loss)
         LOGGER.add_scalar("Train loss", avg_loss, i)
         torch.save(model.state_dict(), MODEL_SAVE_FILE)
