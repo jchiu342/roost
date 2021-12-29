@@ -105,8 +105,8 @@ int main(int argc, char *argv[]) {
     int num_games = stoi(argv[4]) / 2;
     int num_threads = stoi(argv[5]);
     int num_playouts = stoi(argv[6]);
-    int b_wins = test_strength(argv[1], argv[2], num_threads, num_games, num_playouts, "test_strength_black");
-    std::cout << b_wins + (num_games - test_strength(argv[2], argv[1], num_threads, num_games, num_playouts, "test_strength_white")) << std::endl;
+    int b_wins = test_strength(model_1, model_2, num_threads, num_games, num_playouts, "test_strength_black");
+    std::cout << b_wins + (num_games - test_strength(model_2, model_1, num_threads, num_games, num_playouts, "test_strength_white")) << std::endl;
     return 0;
   }
   std::cout << "Incorrect usage\n";
