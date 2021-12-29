@@ -5,6 +5,7 @@
 #include "player/NNEvaluator.h"
 #include "player/RandomPlayer.h"
 #include <filesystem>
+#include <string>
 #include <iostream>
 #include <memory>
 #include <mutex>
@@ -45,18 +46,16 @@ void generate_data(int num_threads, int games, int playouts, std::string model_f
   fs::current_path(starting_path);
 }
 
-int test_strength(std::string black_model_file, std::string white_model_file, std::string save_dir) {
+int test_strength(std::string black_model_file, std::string white_model_file, int num_threads, int games, int playouts, const std::string& save_dir) {
   black_model_file = "../" + black_model_file;
   white_model_file = "../" + white_model_file;
-  int num_threads = 16;
-  int games = 64;
   int black_wins = 0;
   std::mutex mtx;
-  auto task = [black_model_file, white_model_file, num_threads, &black_wins, &mtx](int tid, int games) {
+  auto task = [black_model_file, white_model_file, num_threads, &black_wins, &mtx](int tid, int games, int playouts) {
       std::unique_ptr<Evaluator> b_eval = std::make_unique<NNEvaluator>(black_model_file);
       std::unique_ptr<Evaluator> w_eval = std::make_unique<NNEvaluator>(white_model_file);
-      std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), 1.5, 150, true);
-      std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), 1.5, 20, true);
+      std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), 1.5, playouts, true);
+      std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), 1.5, playouts, true);
       Match m(std::move(black), std::move(white), games, num_threads, tid);
       int b_wins = m.run();
       mtx.lock();
@@ -70,7 +69,7 @@ int test_strength(std::string black_model_file, std::string white_model_file, st
   std::vector<std::thread> threads;
   threads.reserve(num_threads);
   for (int i = 0; i < num_threads; ++i) {
-    threads.emplace_back(std::thread{task, i, games});
+    threads.emplace_back(std::thread{task, i, games, playouts});
   }
   for (int i = 0; i < num_threads; ++i) {
     threads[i].join();
@@ -84,13 +83,41 @@ int main(int argc, char *argv[]) {
     std::cout << "Incorrect usage\n";
     return -1;
   }
+  std::string command = argv[1];
+  if (command == "generate_data") {
+    if (argc < 7) {
+      std::cout << "generate_data usage: ./roost <model_file> <num_games> <num_threads> <playouts> <save_directory>\n";
+      return -1;
+    }
+    std::string model_file = argv[2];
+    int num_games = stoi(argv[3]);
+    int num_threads = stoi(argv[4]);
+    int num_playouts = stoi(argv[5]);
+    generate_data(num_threads, num_games, num_playouts, model_file, argv[6]);
+    return 0;
+  } else if (command == "test_strength") {
+    if (argc < 7) {
+      std::cout << "test_strength usage: ./roost <model_1_file> <model_2_file> <num_games> <num_threads> <num_playouts>\n";
+      return -1;
+    }
+    std::string model_1 = argv[2];
+    std::string model_2 = argv[3];
+    int num_games = stoi(argv[4]) / 2;
+    int num_threads = stoi(argv[5]);
+    int num_playouts = stoi(argv[6]);
+    int b_wins = test_strength(argv[1], argv[2], num_threads, num_games, num_playouts, "test_strength_black");
+    std::cout << b_wins + (num_games - test_strength(argv[2], argv[1], num_threads, num_games, num_playouts, "test_strength_white")) << std::endl;
+    return 0;
+  }
+  std::cout << "Incorrect usage\n";
+  return -1;
   /* int num_games = stoi(argv[1]);
   int num_threads = stoi(argv[2]);
 
   // generate_data(num_threads, num_games, 1000, "traced_model.pt", "speedtest" + to_string(num_threads));*/
-  int x = test_strength(argv[1], argv[2], "test_1");
-  std::cout << x << std::endl;
-  // std::cout <<  x + (64 - test_strength(argv[2], argv[1], "test_2")) << std::endl;
+  // int x = test_strength(argv[1], argv[2], "test_1");
+  // std::cout << x << std::endl;
+  // std::cout <<  x + (128 - test_strength(argv[2], argv[1], "test_2")) << std::endl;
   /*std::unique_ptr<Evaluator> b_eval = std::make_unique<NNEvaluator>("4x323.pt");
   std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), 1.5, 2, true);
   std::unique_ptr<AbstractPlayer> white = std::make_unique<RandomPlayer>(game::Color::WHITE);

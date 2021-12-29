@@ -24,9 +24,10 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
   for (int i = 1; i < playouts_; ++i) {
     visit(state);
   }
-  // not sure how randommness is achieved in AGZ for eval games, so I keep temp = 1 for first 10 moves
-  // in eval games
-  if (!eval_mode_ || state.get_num_turns() < 10) {
+  // not sure how randommness is achieved in AGZ for eval games, so I keep
+  // temp = 1 for first 10 moves in eval games and first 20 moves in self-play
+  // games (30 in 19x19 AGZ)
+  if ((!eval_mode_ || state.get_num_turns() < 10) && state.get_num_turns() < 20) {
     std::uniform_int_distribution<> dist(1, playouts_);
     int vis_num = dist(gen_);
     int counter = 0;
