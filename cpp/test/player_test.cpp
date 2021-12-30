@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 #include <torch/script.h>
+#include <chrono>
 #include "game/GameState.h"
 #include "player/RandomPlayer.h"
 #include "player/Evaluator.h"
@@ -56,7 +57,7 @@ TEST(PlayerTest, DISABLED_NNTest) {
 }
 
 // test NNEvaluator correctness under multiple threads
-TEST(PlayerTest, MultiThreadNNTest) {
+TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
   size_t num_threads = 10;
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt");
   std::vector<game::GameState> states;
@@ -89,4 +90,50 @@ TEST(PlayerTest, MultiThreadNNTest) {
     // no arithmetic is done, so we shouldn't get any rounding errors
     ASSERT_EQ(x.value_, evals[i]);
   }
+}
+
+// TODO: perhaps integrate Google Benchmark or some other tool for more accurate measurement
+TEST(PlayerTest, SpeedTest) {
+  double sum = 0.0;
+  size_t num_iters = 10;
+  for (size_t j = 0; j < num_iters; ++j) {
+    size_t num_threads = 10;
+    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("10x1284.pt");
+    std::vector<game::GameState> states;
+    states.reserve(num_threads);
+    RandomPlayer black_player(game::Color::BLACK);
+    RandomPlayer white_player(game::Color::WHITE);
+    for (size_t i = 0; i < num_threads; ++i) {
+      states.emplace_back(7.5);
+      states[i].move(black_player.get_move(states[i]));
+      states[i].move(white_player.get_move(states[i]));
+    }
+    auto task = [&eval, &states](int tid) {
+        float ret = 0;
+        for (size_t i = 0; i < 800; ++i) {
+          Evaluator::Evaluation x = eval->Evaluate(states[tid]);
+          // prevent evaluation from being optimized away
+          ret += x.value_;
+        }
+        return ret;
+    };
+
+    std::vector<std::thread> threads;
+    threads.reserve(num_threads);
+    auto start = std::chrono::steady_clock::now();
+    for (size_t i = 0; i < num_threads; ++i) {
+      threads.emplace_back(std::thread{task, i});
+    }
+    for (size_t i = 0; i < num_threads; ++i) {
+      threads[i].join();
+    }
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    // disregard the first run because jit is being optimized
+    if (j != 0) {
+      sum += diff.count();
+    }
+    std::cout << "time taken: " << std::fixed << diff.count() << "s\n";
+  }
+  std::cout << "avg: " << std::fixed << sum / (num_iters - 1) << std::endl;
 }
