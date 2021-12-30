@@ -98,7 +98,7 @@ TEST(PlayerTest, SpeedTest) {
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {
     size_t num_threads = 10;
-    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("10x1284.pt");
+    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt");
     std::vector<game::GameState> states;
     states.reserve(num_threads);
     RandomPlayer black_player(game::Color::BLACK);

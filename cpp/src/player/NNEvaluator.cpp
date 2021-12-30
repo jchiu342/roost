@@ -11,7 +11,7 @@ using namespace torch;
 NNEvaluator::NNEvaluator(const std::string &input_file) {
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
-    module_ = torch::jit::load(input_file);
+    module_ = torch::jit::load(input_file, torch::kCUDA);
     module_.eval();
     // module_.to(at::kCUDA);
   } catch (const c10::Error &e) {
@@ -66,7 +66,8 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
     }
   }
   std::vector<torch::jit::IValue> inputs;
-  inputs.emplace_back(input);
+  // inputs.emplace_back(input);
+  inputs.emplace_back(input.to(at::kCUDA));
 
   auto output = module_.forward(inputs).toTuple()->elements();
   assert(output.size() == 2);
