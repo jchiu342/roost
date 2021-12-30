@@ -3,31 +3,48 @@
 //
 
 #include "player/MCTSPlayer.h"
+#include "player/MCTS_defs.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <numeric>
 
 MCTSPlayer::MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
-                       float cpuct, int playouts, bool eval_mode)
+                       int playouts, bool eval_mode, bool use_pcr, int pcr_small, int pcr_big)
     : AbstractPlayer(c), evaluator_(std::move(evaluator)), gen_(rd_()),
-      alpha_(0.15), epsilon_(0.25), cpuct_(cpuct), playouts_(playouts),
-      eval_mode_(eval_mode){}
+      playouts_(playouts),
+      eval_mode_(eval_mode), use_pcr_(use_pcr), pcr_small_(pcr_small), pcr_big_(pcr_big) {}
 
 game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(state.get_turn() == color_);
   visit(state);
   // apply dirichlet to root node
-  if (!eval_mode_) {
-    apply_dirichlet_noise_(state);
-  }
-  for (int i = 1; i < playouts_; ++i) {
-    visit(state);
+  if (!eval_mode_ && use_pcr_) {
+    std::uniform_real_distribution<float> dist(0.0, 1.0);
+    if (dist(gen_) < PCR_P) {
+      // perform a full search
+      apply_dirichlet_noise_(state);
+      for (int i = 1; i < pcr_big_; ++i) {
+        visit(state);
+      }
+    } else {
+      // quick search; no dirichlet noise
+      for (int i = 1; i < pcr_small_; ++i) {
+        visit(state);
+      }
+    }
+  } else {
+    if (!eval_mode_) {
+      apply_dirichlet_noise_(state);
+    }
+    for (int i = 1; i < playouts_; ++i) {
+      visit(state);
+    }
   }
   // not sure how randommness is achieved in AGZ for eval games, so I keep
   // temp = 1 for first 10 moves in eval games and first 20 moves in self-play
   // games (30 in 19x19 AGZ)
-  if ((!eval_mode_ || state.get_num_turns() < 10) && state.get_num_turns() < 20) {
+  if ((!eval_mode_ || state.get_num_turns() < TEMP_0_MOVE_NUM_VAL) && state.get_num_turns() < TEMP_0_MOVE_NUM_TRAIN) {
     std::uniform_int_distribution<> dist(1, playouts_);
     int vis_num = dist(gen_);
     int counter = 0;
@@ -81,7 +98,7 @@ float MCTSPlayer::visit(const game::GameState &state) {
     // the max-policy action on the first playout, but this doesn't seem to be
     // talked about anywhere
     float u = map_[state].Q[legal_idx] +
-              cpuct_ * map_[state].P[legal_idx] *
+              MCTS_CPUCT * map_[state].P[legal_idx] *
                   sqrt(std::accumulate(map_[state].N.begin(),
                                        map_[state].N.end(), 1)) /
                   (1 + map_[state].N[legal_idx]);
@@ -117,7 +134,7 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
   const std::vector<int> legal_actions = state.get_legal_action_indexes();
   size_t num_values = legal_actions.size();
   // generate dirichlet-distributed vector
-  std::gamma_distribution<float> d(alpha_, 1);
+  std::gamma_distribution<float> d(DIRICHLET_ALPHA, 1);
   std::vector<float> values;
   // TODO: figure out why sum = 0 gave some div by 0 errors
   float sum = 1e-8;
@@ -143,7 +160,7 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
   for (size_t i = 0; i < num_values; ++i) {
     assert(!std::isnan(map_[state].P[legal_actions[i]]));
     map_[state].P[legal_actions[i]] =
-        (1 - epsilon_) * map_[state].P[legal_actions[i]] + epsilon_ * values[i];
+        (1 - DIRICHLET_EPSILON) * map_[state].P[legal_actions[i]] + DIRICHLET_EPSILON * values[i];
     assert(!std::isnan(map_[state].P[legal_actions[i]]));
   }
 }

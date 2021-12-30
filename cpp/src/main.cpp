@@ -22,11 +22,11 @@ void generate_data(int num_threads, int games, int playouts, std::string model_f
       std::unique_ptr<Evaluator> b_eval =
               std::make_unique<NNEvaluator>(model_file);
       std::unique_ptr<AbstractPlayer> black =
-              std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), 1.5, playouts);
+              std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), playouts);
       std::unique_ptr<Evaluator> w_eval =
               std::make_unique<NNEvaluator>(model_file);
       std::unique_ptr<AbstractPlayer> white =
-              std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), 1.5, playouts);
+              std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), playouts);
       // mtx.unlock();
       Match m(std::move(black), std::move(white), games, num_threads, tid);
       m.run();
@@ -54,8 +54,8 @@ int test_strength(std::string black_model_file, std::string white_model_file, in
   auto task = [black_model_file, white_model_file, num_threads, &black_wins, &mtx](int tid, int games, int playouts) {
       std::unique_ptr<Evaluator> b_eval = std::make_unique<NNEvaluator>(black_model_file);
       std::unique_ptr<Evaluator> w_eval = std::make_unique<NNEvaluator>(white_model_file);
-      std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), 1.5, playouts, true);
-      std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), 1.5, playouts, true);
+      std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), playouts, true);
+      std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), playouts, true);
       Match m(std::move(black), std::move(white), games, num_threads, tid);
       int b_wins = m.run();
       mtx.lock();
