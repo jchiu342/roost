@@ -26,23 +26,7 @@ TEST(PlayerTest, DISABLED_PlayerGameTest) {
   std::cout << state.score() << std::endl;
 }
 
-TEST(PlayerTest, DISABLED_MCTSTest) {
-  game::GameState state(7.5);
-  std::unique_ptr<Evaluator> eval = std::make_unique<Evaluator>();
-  MCTSPlayer black_player(game::Color::BLACK, std::move(eval));
-  RandomPlayer white_player(game::Color::WHITE);
-  while (!state.done()) {
-    if (state.get_turn() == game::Color::BLACK) {
-      state.move(black_player.get_move(state));
-    } else {
-      state.move(white_player.get_move(state));
-    }
-    std::cout << state.to_string() << std::endl;
-  }
-  std::cout << state.score() << std::endl;
-}
-
-TEST(PlayerTest, DISABLED_MatchTest) {
+/* TEST(PlayerTest, DISABLED_MatchTest) {
   // game::GameState state(7.5);
   std::unique_ptr<Evaluator> eval = std::make_unique<Evaluator>();
   // std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(eval));
@@ -53,7 +37,7 @@ TEST(PlayerTest, DISABLED_MatchTest) {
   std::cout << m.run();
   // MCTSPlayer black_player(game::Color::BLACK, std::move(eval));
   // RandomPlayer white_player(game::Color::WHITE);
-}
+}*/
 
 TEST(PlayerTest, DISABLED_NNTest) {
   game::GameState state(7.5);
@@ -71,17 +55,38 @@ TEST(PlayerTest, DISABLED_NNTest) {
   std::cout << state.score() << std::endl;
 }
 
-/*TEST(PlayerTest, TorchLoadTest) {
-  torch::jit::script::Module module;
-  const std::string model_string = "traced_model.pt";
-  try {
-    // Deserialize the ScriptModule from a file using torch::jit::load().
-    module = torch::jit::load(model_string);
+// test NNEvaluator correctness under multiple threads
+TEST(PlayerTest, MultiThreadNNTest) {
+  size_t num_threads = 10;
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt");
+  std::vector<game::GameState> states;
+  std::vector<float> evals;
+  states.reserve(num_threads);
+  evals.reserve(num_threads);
+  RandomPlayer black_player(game::Color::BLACK);
+  RandomPlayer white_player(game::Color::WHITE);
+  for (size_t i = 0; i < num_threads; ++i) {
+    states.emplace_back(7.5);
+    states[i].move(black_player.get_move(states[i]));
+    states[i].move(white_player.get_move(states[i]));
   }
-  catch (const c10::Error& e) {
-    std::cerr << "error loading the model\n";
-    // return -1;
-  }
+  auto task = [&eval, &states, &evals](int tid) {
+    Evaluator::Evaluation x = eval->Evaluate(states[tid]);
+    evals[tid] = x.value_;
+  };
 
-  std::cout << "ok\n";
-}*/
+  std::vector<std::thread> threads;
+  threads.reserve(num_threads);
+  for (size_t i = 0; i < num_threads; ++i) {
+    threads.emplace_back(std::thread{task, i});
+  }
+  for (size_t i = 0; i < num_threads; ++i) {
+    threads[i].join();
+  }
+  // check correctness against single-thread mode
+  for (size_t i = 0; i < num_threads; ++i) {
+    Evaluator::Evaluation x = eval->Evaluate(states[i]);
+    // no arithmetic is done, so we shouldn't get any rounding errors
+    ASSERT_EQ(x.value_, evals[i]);
+  }
+}

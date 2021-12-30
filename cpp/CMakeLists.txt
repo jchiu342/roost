@@ -67,7 +67,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(
-        hello_test
+        unit_tests
         src/game/Action.cpp
         src/game/GameState.cpp
         src/play/Match.cpp
@@ -79,9 +79,9 @@ add_executable(
         test/game_test.cpp
         test/player_test.cpp)
 target_link_libraries(
-        hello_test
+        unit_tests
         gtest_main
 )
-target_link_libraries(hello_test "${TORCH_LIBRARIES}")
+target_link_libraries(unit_tests "${TORCH_LIBRARIES}")
 
-add_test(NAME sample_test COMMAND hello_test)
+# add_test(NAME sample_test COMMAND hello_test)
