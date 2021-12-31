@@ -24,7 +24,7 @@ class MCTSPlayer : public AbstractPlayer {
 
 public:
   MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
-             float cpuct = 1.5f, int playouts = 250, bool eval_mode = false);
+             int playouts = 250, bool eval_mode = false, bool use_pcr = false, int pcr_small = 0, int pcr_big = 0);
   game::Action get_move(game::GameState state) override;
   void reset() override;
 
@@ -36,14 +36,11 @@ private:
   std::unordered_map<game::GameState, MCTSNode> map_;
   std::random_device rd_;
   std::mt19937 gen_;
-  // for dirichlet noise
-  float alpha_;
-  float epsilon_;
-  // hyperparameter for MCTS exploration
-  float cpuct_;
-
   int playouts_;
   bool eval_mode_;
+  bool use_pcr_;
+  int pcr_small_;
+  int pcr_big_;
 };
 
 #endif // ROOST_MCTSPLAYER_H
