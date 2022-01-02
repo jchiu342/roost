@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 #include <torch/script.h>
 #include <chrono>
+#include <string>
 #include "game/GameState.h"
 #include "player/RandomPlayer.h"
 #include "player/Evaluator.h"
@@ -58,7 +59,7 @@ TEST(PlayerTest, DISABLED_NNTest) {
 
 // test NNEvaluator correctness under multiple threads
 TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
-  size_t num_threads = 10;
+  size_t num_threads = 1;
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt");
   std::vector<game::GameState> states;
   std::vector<float> evals;
@@ -93,7 +94,7 @@ TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
 }
 
 // TODO: perhaps integrate Google Benchmark or some other tool for more accurate measurement
-TEST(PlayerTest, SpeedTest) {
+TEST(PlayerTest, DISABLED_SpeedTest) {
   double sum = 0.0;
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {

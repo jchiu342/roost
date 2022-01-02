@@ -11,6 +11,7 @@ using namespace torch;
 NNEvaluator::NNEvaluator(const std::string &input_file) {
   try {
     // Deserialize the ScriptModule from a file using torch::jit::load().
+    // module_ = torch::jit::load(input_file);
     module_ = torch::jit::load(input_file, torch::kCUDA);
     module_.eval();
     // module_.to(at::kCUDA);
@@ -35,33 +36,35 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
     return {{}, (state.winner() == game::BLACK ? 1.0f : -1.0f)};
   }
   torch::NoGradGuard no_grad;
-  Tensor input = torch::zeros({5, BOARD_SIZE, BOARD_SIZE});
+  Tensor input = torch::zeros({128, 5, BOARD_SIZE, BOARD_SIZE});
   const game::Color *index_0 = state.get_board(0);
-  if (state.get_turn() == game::BLACK) {
-    for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
-      if (*(index_0 + i) == game::BLACK) {
-        input[0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-      } else if (*(index_0 + i) == game::WHITE) {
-        input[1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+  for (int z = 0; z < 128; ++z) {
+    if (state.get_turn() == game::BLACK) {
+      for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
+        if (*(index_0 + i) == game::BLACK) {
+          input[z][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+        } else if (*(index_0 + i) == game::WHITE) {
+          input[z][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+        }
+        if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::BLACK) {
+          input[z][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+        } else if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::WHITE) {
+          input[z][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+        }
+        input[z][4][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
       }
-      if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::BLACK) {
-        input[2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-      } else if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::WHITE) {
-        input[3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-      }
-      input[4][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-    }
-  } else {
-    for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
-      if (*(index_0 + i) == game::BLACK) {
-        input[1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-      } else if (*(index_0 + i) == game::WHITE) {
-        input[0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-      }
-      if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::BLACK) {
-        input[3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-      } else if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::WHITE) {
-        input[2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+    } else {
+      for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
+        if (*(index_0 + i) == game::BLACK) {
+          input[z][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+        } else if (*(index_0 + i) == game::WHITE) {
+          input[z][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+        }
+        if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::BLACK) {
+          input[z][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+        } else if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::WHITE) {
+          input[z][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+        }
       }
     }
   }
@@ -75,11 +78,18 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   auto value_tensor = output[1].toTensor();
   std::vector<float> policy;
   policy.reserve(BOARD_SIZE * BOARD_SIZE + 1);
+  // std::cout << policy_tensor.dim() << std::endl;
+  // std::cout << policy_tensor.size(0) << ' ' << policy_tensor.size(1) << std::endl;
+  // std::cout << value_tensor.dim() << std::endl;
+  // std::cout << value_tensor.size(0) << ' ' << value_tensor.size(1) << std::endl;
   // std::cout << state.to_string() << std::endl;
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
     policy.push_back(policy_tensor[0][i].item<float>());
+    // std::cout < "wtf compile pls";
+    // std::cout << policy_tensor[0][i].item<float>() << ' ';
+    // std::cout << policy_tensor[1][i].item<float>() << std::endl;
     // std::cout << i << ' ' << policy[i] << std::endl;
   }
   // std::cout << "value: " << value_tensor.item<float>();*/
-  return {policy, value_tensor.item<float>()};
+  return {policy, value_tensor[0].item<float>()};
 }
