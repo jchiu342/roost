@@ -36,9 +36,9 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
     return {{}, (state.winner() == game::BLACK ? 1.0f : -1.0f)};
   }
   torch::NoGradGuard no_grad;
-  Tensor input = torch::zeros({128, 5, BOARD_SIZE, BOARD_SIZE});
+  Tensor input = torch::zeros({16, 5, BOARD_SIZE, BOARD_SIZE});
   const game::Color *index_0 = state.get_board(0);
-  for (int z = 0; z < 128; ++z) {
+  for (int z = 0; z < 16; ++z) {
     if (state.get_turn() == game::BLACK) {
       for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
         if (*(index_0 + i) == game::BLACK) {
@@ -74,22 +74,23 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
 
   auto output = module_.forward(inputs).toTuple()->elements();
   assert(output.size() == 2);
-  auto policy_tensor = output[0].toTensor();
+  // auto policy_tensor = output[0].toTensor();
   auto value_tensor = output[1].toTensor();
-  std::vector<float> policy;
-  policy.reserve(BOARD_SIZE * BOARD_SIZE + 1);
+  auto policy_tensor = output[0].toTensor().to(torch::kCPU);
+  // auto value_tensor = output[1].toTensor().to(torch::kCPU);
+  std::vector<float> policy(policy_tensor.data_ptr<float>(), policy_tensor.data_ptr<float>() + (BOARD_SIZE * BOARD_SIZE + 1));
+  // policy.reserve(BOARD_SIZE * BOARD_SIZE + 1);
   // std::cout << policy_tensor.dim() << std::endl;
   // std::cout << policy_tensor.size(0) << ' ' << policy_tensor.size(1) << std::endl;
   // std::cout << value_tensor.dim() << std::endl;
   // std::cout << value_tensor.size(0) << ' ' << value_tensor.size(1) << std::endl;
   // std::cout << state.to_string() << std::endl;
-  for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
-    policy.push_back(policy_tensor[0][i].item<float>());
-    // std::cout < "wtf compile pls";
-    // std::cout << policy_tensor[0][i].item<float>() << ' ';
-    // std::cout << policy_tensor[1][i].item<float>() << std::endl;
-    // std::cout << i << ' ' << policy[i] << std::endl;
-  }
+  // std::memcpy(&policy[0], policy_tensor.data_ptr(), sizeof(float) * (BOARD_SIZE * BOARD_SIZE + 1));
+  /* for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
+    if (policy[i] != policy_tensor[0][i].item<float>()) {
+      std::cout << "incorrect at position" << i << std::endl;
+    }
+  }*/
   // std::cout << "value: " << value_tensor.item<float>();*/
   return {policy, value_tensor[0].item<float>()};
 }
