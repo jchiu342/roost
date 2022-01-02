@@ -91,9 +91,8 @@ def start_train(train_dir, val_dir, save_name):
         batch_size=BATCH_SIZE
     )
     # board size, # filters, # blocks
-    model = ConnectNet(9, 32, 3).to(DEVICE)
-    # model = ConnectNet(9, 64, 5)
-    # model.load_state_dict(torch.load("model_state_dict.pth"))
+    model = ConnectNet(9, 32, 3)
+    # model.load_state_dict(torch.load("model_state_dict.pth19.pth"))
     model = model.to(DEVICE)
     loss_fn = AlphaLoss()
     optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
@@ -105,7 +104,7 @@ def start_train(train_dir, val_dir, save_name):
 
 def save_trace(model, valset, trace_file_name, log_iter):
     model = model.to(torch.device("cpu"))
-    torch.save(model.state_dict(), MODEL_SAVE_FILE + str(log_iter) + ".pth")
+    torch.save(model.state_dict(), trace_file_name + str(log_iter) + ".pth")
     scripted_model = torch.jit.script(model)
     scripted_model.save(trace_file_name + str(log_iter) + ".pt")
     print("saved " + trace_file_name + str(log_iter) + ".pt")
