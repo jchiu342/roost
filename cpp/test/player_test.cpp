@@ -58,9 +58,9 @@ TEST(PlayerTest, DISABLED_NNTest) {
 }
 
 // test NNEvaluator correctness under multiple threads
-TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
-  size_t num_threads = 1;
-  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt");
+TEST(PlayerTest, MultiThreadNNTest) {
+  size_t num_threads = 16;
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt", num_threads);
   std::vector<game::GameState> states;
   std::vector<float> evals;
   states.reserve(num_threads);
@@ -86,10 +86,12 @@ TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
     threads[i].join();
   }
   // check correctness against single-thread mode
+  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator>("4x32_net1.pt", 1);
   for (size_t i = 0; i < num_threads; ++i) {
-    Evaluator::Evaluation x = eval->Evaluate(states[i]);
-    // no arithmetic is done, so we shouldn't get any rounding errors
-    ASSERT_EQ(x.value_, evals[i]);
+    Evaluator::Evaluation x = st_eval->Evaluate(states[i]);
+    // account for some rounding errors
+    ASSERT_TRUE(abs(x.value_ -evals[i]) < 1e-5);
+    // std::cout << x.value_ << ' ' << evals[i] << std::endl;
   }
 }
 
@@ -98,8 +100,8 @@ TEST(PlayerTest, SpeedTest) {
   double sum = 0.0;
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {
-    size_t num_threads = 10;
-    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt");
+    size_t num_threads = 16;
+    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt", num_threads);
     std::vector<game::GameState> states;
     states.reserve(num_threads);
     RandomPlayer black_player(game::Color::BLACK);

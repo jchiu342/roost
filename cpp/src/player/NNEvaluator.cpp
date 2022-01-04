@@ -5,15 +5,18 @@
 #include "player/NNEvaluator.h"
 #include <torch/script.h>
 #include <torch/torch.h>
+#include <memory>
 
 using namespace torch;
 
-NNEvaluator::NNEvaluator(const std::string &input_file) {
+NNEvaluator::NNEvaluator(const std::string &input_file, const int batch_size) : batch_size_(batch_size),
+global_counter_(0) {
   try {
+    module_ = std::make_shared<torch::jit::script::Module>();
     // Deserialize the ScriptModule from a file using torch::jit::load().
     // module_ = torch::jit::load(input_file);
-    module_ = torch::jit::load(input_file, torch::kCUDA);
-    module_.eval();
+    *module_ = torch::jit::load(input_file, torch::kCUDA);
+    module_->eval();
     // module_.to(at::kCUDA);
   } catch (const c10::Error &e) {
     std::cerr << "error loading the model\n";
@@ -35,7 +38,33 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   if (state.done()) {
     return {{}, (state.winner() == game::BLACK ? 1.0f : -1.0f)};
   }
-  torch::NoGradGuard no_grad;
+  mtx_.lock();
+  // each request is assigned a unique counter
+  const int counter = global_counter_;
+  ++global_counter_;
+  const int batch_idx = counter / batch_size_;
+  // if previous batches are full, start a new one
+  if (counter % batch_size_ == 0) {
+    counters_[batch_idx] = 0;
+    batch_map_[batch_idx] = new Batch(module_, batch_size_);
+  }
+  Batch *batch = batch_map_[batch_idx];
+  mtx_.unlock();
+  Evaluation return_eval = batch->Evaluate(state, counter % batch_size_);
+  mtx_.lock();
+  if (++counters_[batch_idx] < batch_size_) {
+    // not the last thread; we can leave
+    mtx_.unlock();
+    return return_eval;
+  }
+  // last thread is responsible for deallocation + erase
+  // delete batch;
+  batch_map_.erase(batch_idx);
+  counters_.erase(batch_idx);
+  mtx_.unlock();
+  delete batch;
+  return return_eval;
+  /* torch::NoGradGuard no_grad;
   Tensor input = torch::zeros({16, 5, BOARD_SIZE, BOARD_SIZE});
   const game::Color *index_0 = state.get_board(0);
   for (int z = 0; z < 16; ++z) {
@@ -86,11 +115,11 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   // std::cout << value_tensor.size(0) << ' ' << value_tensor.size(1) << std::endl;
   // std::cout << state.to_string() << std::endl;
   // std::memcpy(&policy[0], policy_tensor.data_ptr(), sizeof(float) * (BOARD_SIZE * BOARD_SIZE + 1));
-  /* for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
+  for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
     if (policy[i] != policy_tensor[0][i].item<float>()) {
       std::cout << "incorrect at position" << i << std::endl;
     }
-  }*/
-  // std::cout << "value: " << value_tensor.item<float>();*/
-  return {policy, value_tensor[0].item<float>()};
+  }
+  // std::cout << "value: " << value_tensor.item<float>();
+  return {policy, value_tensor[0].item<float>()};*/
 }
