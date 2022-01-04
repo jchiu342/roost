@@ -9,7 +9,7 @@
 #include <iostream>
 #include <numeric>
 
-MCTSPlayer::MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
+MCTSPlayer::MCTSPlayer(game::Color c, std::shared_ptr<Evaluator> evaluator,
                        int playouts, bool eval_mode, bool use_pcr, int pcr_small, int pcr_big)
     : AbstractPlayer(c), evaluator_(std::move(evaluator)), gen_(rd_()),
       playouts_(playouts),

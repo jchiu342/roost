@@ -46,9 +46,9 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   // if previous batches are full, start a new one
   if (counter % batch_size_ == 0) {
     counters_[batch_idx] = 0;
-    batch_map_[batch_idx] = new Batch(module_, batch_size_);
+    batch_map_[batch_idx] = std::make_shared<Batch>(module_, batch_size_);
   }
-  Batch *batch = batch_map_[batch_idx];
+  std::shared_ptr<Batch> batch = batch_map_[batch_idx];
   mtx_.unlock();
   Evaluation return_eval = batch->Evaluate(state, counter % batch_size_);
   mtx_.lock();
@@ -62,7 +62,7 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   batch_map_.erase(batch_idx);
   counters_.erase(batch_idx);
   mtx_.unlock();
-  delete batch;
+  // delete batch;
   return return_eval;
   /* torch::NoGradGuard no_grad;
   Tensor input = torch::zeros({16, 5, BOARD_SIZE, BOARD_SIZE});

@@ -16,18 +16,13 @@ namespace fs = std::filesystem;
 
 void generate_data(int num_threads, int games, int playouts, std::string model_file, const std::string &save_dir) {
   // std::mutex mtx;
-  model_file = "../" + model_file;
-  auto task = [&, num_threads, playouts, model_file, save_dir](int tid, int games) {
-      // mtx.lock();
-      std::unique_ptr<Evaluator> b_eval =
-              std::make_unique<NNEvaluator>(model_file);
+  // model_file = "../" + model_file;
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>(model_file, num_threads);
+  auto task = [&, eval, num_threads, playouts, save_dir](int tid, int games) {
       std::unique_ptr<AbstractPlayer> black =
-              std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), playouts);
-      std::unique_ptr<Evaluator> w_eval =
-              std::make_unique<NNEvaluator>(model_file);
+              std::make_unique<MCTSPlayer>(game::Color::BLACK, eval, playouts);
       std::unique_ptr<AbstractPlayer> white =
-              std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), playouts);
-      // mtx.unlock();
+              std::make_unique<MCTSPlayer>(game::Color::WHITE, eval, playouts);
       Match m(std::move(black), std::move(white), games, num_threads, tid);
       m.run();
   };
@@ -47,15 +42,15 @@ void generate_data(int num_threads, int games, int playouts, std::string model_f
 }
 
 int test_strength(std::string black_model_file, std::string white_model_file, int num_threads, int games, int playouts, const std::string& save_dir) {
-  black_model_file = "../" + black_model_file;
-  white_model_file = "../" + white_model_file;
+  // black_model_file = "../" + black_model_file;
+  // white_model_file = "../" + white_model_file;
   int black_wins = 0;
   std::mutex mtx;
-  auto task = [black_model_file, white_model_file, num_threads, &black_wins, &mtx](int tid, int games, int playouts) {
-      std::unique_ptr<Evaluator> b_eval = std::make_unique<NNEvaluator>(black_model_file);
-      std::unique_ptr<Evaluator> w_eval = std::make_unique<NNEvaluator>(white_model_file);
-      std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, std::move(b_eval), playouts, true);
-      std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, std::move(w_eval), playouts, true);
+  std::shared_ptr<Evaluator> b_eval = std::make_shared<NNEvaluator>(black_model_file);
+  std::shared_ptr<Evaluator> w_eval = std::make_shared<NNEvaluator>(white_model_file);
+  auto task = [b_eval, w_eval, num_threads, &black_wins, &mtx](int tid, int games, int playouts) {
+      std::unique_ptr<AbstractPlayer> black = std::make_unique<MCTSPlayer>(game::Color::BLACK, b_eval, playouts, true);
+      std::unique_ptr<AbstractPlayer> white = std::make_unique<MCTSPlayer>(game::Color::WHITE, w_eval, playouts, true);
       Match m(std::move(black), std::move(white), games, num_threads, tid);
       int b_wins = m.run();
       mtx.lock();

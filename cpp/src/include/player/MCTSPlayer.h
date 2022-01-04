@@ -23,7 +23,7 @@ class MCTSPlayer : public AbstractPlayer {
   };
 
 public:
-  MCTSPlayer(game::Color c, std::unique_ptr<Evaluator> &&evaluator,
+  MCTSPlayer(game::Color c, std::shared_ptr<Evaluator> evaluator,
              int playouts = 250, bool eval_mode = false, bool use_pcr = false, int pcr_small = 0, int pcr_big = 0);
   game::Action get_move(game::GameState state) override;
   void reset() override;
@@ -31,7 +31,7 @@ public:
 private:
   float visit(const game::GameState &state);
   void apply_dirichlet_noise_(const game::GameState &state);
-  std::unique_ptr<Evaluator> evaluator_;
+  std::shared_ptr<Evaluator> evaluator_;
   // std::unordered_set<game::GameState> visited_;
   std::unordered_map<game::GameState, MCTSNode> map_;
   std::random_device rd_;

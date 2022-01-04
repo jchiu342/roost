@@ -90,7 +90,7 @@ public:
     bool done_processing_;
   };
 
-  explicit NNEvaluator(const std::string &input_file = "", const int batch_size = 10);
+  explicit NNEvaluator(const std::string &input_file = "", const int batch_size = 1);
   Evaluation Evaluate(const game::GameState &state) override;
 
 private:
@@ -99,7 +99,7 @@ private:
   int global_counter_;
   // TODO: find better data structures for these tasks; unordered_map overhead is high
   std::unordered_map<int, int> counters_;
-  std::unordered_map<int, Batch *> batch_map_;
+  std::unordered_map<int, std::shared_ptr<Batch>> batch_map_;
   // protects maps and global counter
   std::mutex mtx_;
 };

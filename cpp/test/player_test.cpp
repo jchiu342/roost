@@ -96,7 +96,7 @@ TEST(PlayerTest, MultiThreadNNTest) {
 }
 
 // TODO: perhaps integrate Google Benchmark or some other tool for more accurate measurement
-TEST(PlayerTest, SpeedTest) {
+TEST(PlayerTest, DISABLED_SpeedTest) {
   double sum = 0.0;
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {
