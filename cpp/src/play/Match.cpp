@@ -14,8 +14,9 @@
 
 Match::Match(std::shared_ptr<AbstractPlayer> black,
              std::shared_ptr<AbstractPlayer> white, int num_games,
-             int num_threads, int tid)
-    : black_(std::move(black)), white_(std::move(white)), tid_(tid),
+             int num_threads, int tid, std::shared_ptr<std::atomic<int>> wins, std::shared_ptr<std::atomic<int>> games)
+    : black_(std::move(black)), white_(std::move(white)), wins_(std::move(wins)),
+      games_(std::move(games)), tid_(tid),
       num_games_(num_games), num_threads_(num_threads) {}
 
 int Match::run() {
@@ -53,7 +54,9 @@ int Match::run() {
     outfile.close();
     // black_wins += (state.winner() == game::BLACK ? 1 : 0);
 
-    std::cout << state.score() << std::endl;
+    int total_games = games_->fetch_add(1);
+    int total_wins = wins_->fetch_add(state.winner() == game::BLACK ? 1 : 0);
+    std::cout << state.score() << "; " << total_wins + (state.winner() == game::BLACK ? 1 : 0) << "/" << total_games + 1 << std::endl;
   }
   // fs::current_path(starting_path);
   return black_wins;

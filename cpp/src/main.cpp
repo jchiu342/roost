@@ -4,6 +4,7 @@
 #include "player/MCTSPlayer.h"
 #include "player/NNEvaluator.h"
 #include "player/RandomPlayer.h"
+#include <atomic>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -18,12 +19,14 @@ void generate_data(int num_threads, int games, int playouts,
                    std::string model_file, const std::string &save_dir) {
   std::shared_ptr<Evaluator> eval =
       std::make_shared<NNEvaluator>(model_file, 16);
-  auto task = [&, eval, num_threads, playouts, save_dir](int tid, int games) {
+  std::shared_ptr<std::atomic<int>> win_counter = std::make_shared<std::atomic<int>>(0);
+  std::shared_ptr<std::atomic<int>> game_counter = std::make_shared<std::atomic<int>>(0);
+  auto task = [&, eval, num_threads, playouts, win_counter, game_counter](int tid, int games) {
     std::shared_ptr<AbstractPlayer> black =
         std::make_shared<MCTSPlayer>(game::Color::BLACK, eval, playouts);
     std::shared_ptr<AbstractPlayer> white =
         std::make_shared<MCTSPlayer>(game::Color::WHITE, eval, playouts);
-    Match m(black, white, games, num_threads, tid);
+    Match m(black, white, games, num_threads, tid, win_counter, game_counter);
     m.run();
   };
   auto starting_path = fs::current_path();
@@ -49,13 +52,15 @@ int test_strength(std::string black_model_file, std::string white_model_file,
       std::make_shared<NNEvaluator>(black_model_file, 16);
   std::shared_ptr<Evaluator> w_eval =
       std::make_shared<NNEvaluator>(white_model_file, 16);
+  std::shared_ptr<std::atomic<int>> win_counter = std::make_shared<std::atomic<int>>(0);
+  std::shared_ptr<std::atomic<int>> game_counter = std::make_shared<std::atomic<int>>(0);
   auto task = [b_eval, w_eval, num_threads, &black_wins,
-               &mtx](int tid, int games, int playouts) {
+               &mtx, win_counter, game_counter](int tid, int games, int playouts) {
     std::shared_ptr<AbstractPlayer> black = std::make_shared<MCTSPlayer>(
         game::Color::BLACK, b_eval, playouts, true);
     std::shared_ptr<AbstractPlayer> white = std::make_shared<MCTSPlayer>(
         game::Color::WHITE, w_eval, playouts, true);
-    Match m(black, white, games, num_threads, tid);
+    Match m(black, white, games, num_threads, tid, win_counter, game_counter);
     int b_wins = m.run();
     mtx.lock();
     black_wins += b_wins;
