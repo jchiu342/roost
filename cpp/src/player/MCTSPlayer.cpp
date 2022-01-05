@@ -10,10 +10,11 @@
 #include <numeric>
 
 MCTSPlayer::MCTSPlayer(game::Color c, std::shared_ptr<Evaluator> evaluator,
-                       int playouts, bool eval_mode, bool use_pcr, int pcr_small, int pcr_big)
+                       int playouts, bool eval_mode, bool use_pcr,
+                       int pcr_small, int pcr_big)
     : AbstractPlayer(c), evaluator_(std::move(evaluator)), gen_(rd_()),
-      playouts_(playouts),
-      eval_mode_(eval_mode), use_pcr_(use_pcr), pcr_small_(pcr_small), pcr_big_(pcr_big) {}
+      playouts_(playouts), eval_mode_(eval_mode), use_pcr_(use_pcr),
+      pcr_small_(pcr_small), pcr_big_(pcr_big) {}
 
 game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(state.get_turn() == color_);
@@ -43,7 +44,8 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
   // not sure how randommness is achieved in AGZ for eval games, so I keep
   // temp = 1 for first 10 moves in eval games and first 20 moves in self-play
   // games (30 in 19x19 AGZ)
-  if ((!eval_mode_ || state.get_num_turns() < TEMP_0_MOVE_NUM_VAL) && state.get_num_turns() < TEMP_0_MOVE_NUM_TRAIN) {
+  if ((!eval_mode_ || state.get_num_turns() < TEMP_0_MOVE_NUM_VAL) &&
+      state.get_num_turns() < TEMP_0_MOVE_NUM_TRAIN) {
     std::uniform_int_distribution<> dist(1, playouts_);
     int vis_num = dist(gen_);
     int counter = 0;
@@ -131,7 +133,9 @@ float MCTSPlayer::visit(const game::GameState &state) {
 }
 
 void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
-  if (state.done()) { return; }
+  if (state.done()) {
+    return;
+  }
   const std::vector<int> legal_actions = state.get_legal_action_indexes();
   size_t num_values = legal_actions.size();
   // generate dirichlet-distributed vector
@@ -161,7 +165,8 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
   for (size_t i = 0; i < num_values; ++i) {
     assert(!std::isnan(map_[state].P[legal_actions[i]]));
     map_[state].P[legal_actions[i]] =
-        (1 - DIRICHLET_EPSILON) * map_[state].P[legal_actions[i]] + DIRICHLET_EPSILON * values[i];
+        (1 - DIRICHLET_EPSILON) * map_[state].P[legal_actions[i]] +
+        DIRICHLET_EPSILON * values[i];
     assert(!std::isnan(map_[state].P[legal_actions[i]]));
   }
 }

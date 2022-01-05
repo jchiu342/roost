@@ -5,11 +5,11 @@
 #ifndef ROOST_NNEVALUATOR_H
 #define ROOST_NNEVALUATOR_H
 #include "Evaluator.h"
-#include <torch/script.h>
-#include <torch/torch.h>
 #include <atomic>
 #include <condition_variable>
 #include <memory>
+#include <torch/script.h>
+#include <torch/torch.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -23,8 +23,9 @@ class NNEvaluator : public Evaluator {
 public:
   class Batch {
   public:
-    Batch(std::shared_ptr<torch::jit::script::Module> module, int threads) : module_(std::move(module)), loaded_threads_(0),
-                                                                             threads_(threads), done_processing_(false) {
+    Batch(std::shared_ptr<torch::jit::script::Module> module, int threads)
+        : module_(std::move(module)), loaded_threads_(0), threads_(threads),
+          done_processing_(false) {
       input_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE});
     }
     // it is the caller's responsibility to ensure no duplicate slots
@@ -74,11 +75,15 @@ public:
       } else {
         // otherwise, we block until finished
         std::unique_lock<std::mutex> ul(mtx_);
-        // TODO: confirm that we evaluate predicate before locking for the first time. otherwise there is a bug here
+        // TODO: confirm that we evaluate predicate before locking for the first
+        // time. otherwise there is a bug here
         cv_.wait(ul, [this] { return done_processing_; });
       }
-      std::vector<float> policy(policy_output_.data_ptr<float>() + (slot * (BOARD_SIZE * BOARD_SIZE + 1)),
-              policy_output_.data_ptr<float>() + ((slot + 1) * (BOARD_SIZE * BOARD_SIZE + 1)));
+      std::vector<float> policy(
+          policy_output_.data_ptr<float>() +
+              (slot * (BOARD_SIZE * BOARD_SIZE + 1)),
+          policy_output_.data_ptr<float>() +
+              ((slot + 1) * (BOARD_SIZE * BOARD_SIZE + 1)));
       return {policy, value_output_[slot].item<float>()};
     }
 
@@ -93,14 +98,16 @@ public:
     bool done_processing_;
   };
 
-  explicit NNEvaluator(const std::string &input_file = "", const int batch_size = 1);
+  explicit NNEvaluator(const std::string &input_file = "",
+                       const int batch_size = 1);
   Evaluation Evaluate(const game::GameState &state) override;
 
 private:
   std::shared_ptr<torch::jit::script::Module> module_;
   int batch_size_;
   int global_counter_;
-  // TODO: find better data structures for these tasks; unordered_map overhead is high
+  // TODO: find better data structures for these tasks; unordered_map overhead
+  // is high
   std::unordered_map<int, int> counters_;
   std::unordered_map<int, std::shared_ptr<Batch>> batch_map_;
   // protects maps and global counter

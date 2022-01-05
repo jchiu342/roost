@@ -12,7 +12,7 @@ from os.path import exists
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 MODEL_SAVE_FILE = "model_state_dict.pth"
-EPOCH = 20
+EPOCH = 50
 BATCH_SIZE = 256
 SAMPLES_PER_EPOCH = 1000
 
@@ -47,7 +47,9 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
     it = 0
     model.eval()
     with torch.no_grad():
-        for state, action, result in tqdm(valset):
+    	iterator = iter(valset)
+        for i in tqdm(range(SAMPLES_PER_EPOCH)):
+        	state, action, result = iterator.next()
             s, a, r = state.to(DEVICE), action.to(DEVICE), result.to(DEVICE)
             pred_policy, pred_value = model(s)
             loss = loss_fn(pred_policy, a, pred_value, r)
@@ -88,10 +90,11 @@ def start_train(train_dir, val_dir, save_name):
     )
     valset = torch.utils.data.DataLoader(
         GameDataset(val_dir),
+        shuffle=True,
         batch_size=BATCH_SIZE
     )
     # board size, # filters, # blocks
-    model = ConnectNet(9, 32, 3)
+    model = ConnectNet(9, 32, 4)
     # model.load_state_dict(torch.load("model_state_dict.pth19.pth"))
     model = model.to(DEVICE)
     loss_fn = AlphaLoss()

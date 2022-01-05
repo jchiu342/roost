@@ -3,14 +3,14 @@
 //
 
 #include "player/NNEvaluator.h"
+#include <memory>
 #include <torch/script.h>
 #include <torch/torch.h>
-#include <memory>
 
 using namespace torch;
 
-NNEvaluator::NNEvaluator(const std::string &input_file, const int batch_size) : batch_size_(batch_size),
-global_counter_(0) {
+NNEvaluator::NNEvaluator(const std::string &input_file, const int batch_size)
+    : batch_size_(batch_size), global_counter_(0) {
   try {
     module_ = std::make_shared<torch::jit::script::Module>();
     // Deserialize the ScriptModule from a file using torch::jit::load().
@@ -107,17 +107,20 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   auto value_tensor = output[1].toTensor();
   auto policy_tensor = output[0].toTensor().to(torch::kCPU);
   // auto value_tensor = output[1].toTensor().to(torch::kCPU);
-  std::vector<float> policy(policy_tensor.data_ptr<float>(), policy_tensor.data_ptr<float>() + (BOARD_SIZE * BOARD_SIZE + 1));
+  std::vector<float> policy(policy_tensor.data_ptr<float>(),
+  policy_tensor.data_ptr<float>() + (BOARD_SIZE * BOARD_SIZE + 1));
   // policy.reserve(BOARD_SIZE * BOARD_SIZE + 1);
   // std::cout << policy_tensor.dim() << std::endl;
-  // std::cout << policy_tensor.size(0) << ' ' << policy_tensor.size(1) << std::endl;
+  // std::cout << policy_tensor.size(0) << ' ' << policy_tensor.size(1) <<
+  std::endl;
   // std::cout << value_tensor.dim() << std::endl;
-  // std::cout << value_tensor.size(0) << ' ' << value_tensor.size(1) << std::endl;
+  // std::cout << value_tensor.size(0) << ' ' << value_tensor.size(1) <<
+  std::endl;
   // std::cout << state.to_string() << std::endl;
-  // std::memcpy(&policy[0], policy_tensor.data_ptr(), sizeof(float) * (BOARD_SIZE * BOARD_SIZE + 1));
-  for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
-    if (policy[i] != policy_tensor[0][i].item<float>()) {
-      std::cout << "incorrect at position" << i << std::endl;
+  // std::memcpy(&policy[0], policy_tensor.data_ptr(), sizeof(float) *
+  (BOARD_SIZE * BOARD_SIZE + 1)); for (int i = 0; i < BOARD_SIZE * BOARD_SIZE +
+  1; ++i) { if (policy[i] != policy_tensor[0][i].item<float>()) { std::cout <<
+  "incorrect at position" << i << std::endl;
     }
   }
   // std::cout << "value: " << value_tensor.item<float>();

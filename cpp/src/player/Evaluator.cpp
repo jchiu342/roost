@@ -6,9 +6,9 @@
 #include <cassert>
 #include <iostream>
 
-/*virtual Evaluator::Evaluation Evaluator::evaluate(const game::GameState &state) {
-  if (state.done()) {
-    return {{}, (state.winner() == game::BLACK ? 1.0f : -1.0f)};
+/*virtual Evaluator::Evaluation Evaluator::evaluate(const game::GameState
+&state) { if (state.done()) { return {{}, (state.winner() == game::BLACK ? 1.0f
+: -1.0f)};
   }
   std::cout << "doing this eval" << std::endl;
   std::vector<float> policy;

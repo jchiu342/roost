@@ -7,14 +7,14 @@
 // #include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <string>
 #include <memory>
+#include <string>
 
 // namespace fs = std::filesystem;
 
 Match::Match(std::shared_ptr<AbstractPlayer> black,
-             std::shared_ptr<AbstractPlayer> white, int num_games, int num_threads,
-             int tid)
+             std::shared_ptr<AbstractPlayer> white, int num_games,
+             int num_threads, int tid)
     : black_(std::move(black)), white_(std::move(white)), tid_(tid),
       num_games_(num_games), num_threads_(num_threads) {}
 
