@@ -8,12 +8,12 @@
 #include <fstream>
 #include <iostream>
 #include <string>
-#include <utility>
+#include <memory>
 
 // namespace fs = std::filesystem;
 
-Match::Match(std::unique_ptr<AbstractPlayer> &&black,
-             std::unique_ptr<AbstractPlayer> &&white, int num_games, int num_threads,
+Match::Match(std::shared_ptr<AbstractPlayer> black,
+             std::shared_ptr<AbstractPlayer> white, int num_games, int num_threads,
              int tid)
     : black_(std::move(black)), white_(std::move(white)), tid_(tid),
       num_games_(num_games), num_threads_(num_threads) {}

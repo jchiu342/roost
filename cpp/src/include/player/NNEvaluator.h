@@ -63,7 +63,10 @@ public:
       if (loaded_threads_.fetch_add(1) == threads_ - 1) {
         std::vector<torch::jit::IValue> inputs;
         inputs.emplace_back(input_.to(at::kCUDA));
+        // inputs.emplace_back(input_);
         auto output = module_->forward(inputs).toTuple()->elements();
+        // policy_output_ = output[0].toTensor();
+        // value_output_ = output[1].toTensor();
         policy_output_ = output[0].toTensor().to(torch::kCPU);
         value_output_ = output[1].toTensor().to(torch::kCPU);
         done_processing_ = true;
@@ -75,7 +78,7 @@ public:
         cv_.wait(ul, [this] { return done_processing_; });
       }
       std::vector<float> policy(policy_output_.data_ptr<float>() + (slot * (BOARD_SIZE * BOARD_SIZE + 1)),
-              policy_output_.data_ptr<float>() + ((slot + 1) * BOARD_SIZE * BOARD_SIZE + 1));
+              policy_output_.data_ptr<float>() + ((slot + 1) * (BOARD_SIZE * BOARD_SIZE + 1)));
       return {policy, value_output_[slot].item<float>()};
     }
 

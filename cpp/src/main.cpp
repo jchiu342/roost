@@ -19,11 +19,11 @@ void generate_data(int num_threads, int games, int playouts, std::string model_f
   // model_file = "../" + model_file;
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>(model_file, num_threads);
   auto task = [&, eval, num_threads, playouts, save_dir](int tid, int games) {
-      std::unique_ptr<AbstractPlayer> black =
-              std::make_unique<MCTSPlayer>(game::Color::BLACK, eval, playouts);
-      std::unique_ptr<AbstractPlayer> white =
-              std::make_unique<MCTSPlayer>(game::Color::WHITE, eval, playouts);
-      Match m(std::move(black), std::move(white), games, num_threads, tid);
+      std::shared_ptr<AbstractPlayer> black =
+              std::make_shared<MCTSPlayer>(game::Color::BLACK, eval, playouts);
+      std::shared_ptr<AbstractPlayer> white =
+              std::make_shared<MCTSPlayer>(game::Color::WHITE, eval, playouts);
+      Match m(black, white, games, num_threads, tid);
       m.run();
   };
   auto starting_path = fs::current_path();

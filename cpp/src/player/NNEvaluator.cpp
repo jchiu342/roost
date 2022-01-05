@@ -14,7 +14,7 @@ global_counter_(0) {
   try {
     module_ = std::make_shared<torch::jit::script::Module>();
     // Deserialize the ScriptModule from a file using torch::jit::load().
-    // module_ = torch::jit::load(input_file);
+    // *module_ = torch::jit::load(input_file);
     *module_ = torch::jit::load(input_file, torch::kCUDA);
     module_->eval();
     // module_.to(at::kCUDA);

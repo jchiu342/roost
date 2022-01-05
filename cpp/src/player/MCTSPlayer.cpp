@@ -18,7 +18,6 @@ MCTSPlayer::MCTSPlayer(game::Color c, std::shared_ptr<Evaluator> evaluator,
 game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(state.get_turn() == color_);
   visit(state);
-  // apply dirichlet to root node
   if (!eval_mode_ && use_pcr_) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
     if (dist(gen_) < PCR_P) {
@@ -85,6 +84,7 @@ float MCTSPlayer::visit(const game::GameState &state) {
     Evaluator::Evaluation eval = evaluator_->Evaluate(state);
     // cache our policy and value
     map_[state].P = eval.policy_;
+    assert(map_[state].P.size() == BOARD_SIZE * BOARD_SIZE + 1);
     return eval.value_;
   }
   // std::cout << "map contains state already" << std::endl;
@@ -131,12 +131,13 @@ float MCTSPlayer::visit(const game::GameState &state) {
 }
 
 void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
+  if (state.done()) { return; }
   const std::vector<int> legal_actions = state.get_legal_action_indexes();
   size_t num_values = legal_actions.size();
   // generate dirichlet-distributed vector
   std::gamma_distribution<float> d(DIRICHLET_ALPHA, 1);
   std::vector<float> values;
-  // TODO: figure out why sum = 0 gave some div by 0 errors
+  // small number to prevent div by 0 errors
   float sum = 1e-8;
   for (size_t i = 0; i < num_values; ++i) {
     values.push_back(d(gen_));
