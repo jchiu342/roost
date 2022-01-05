@@ -17,7 +17,7 @@ namespace fs = std::filesystem;
 void generate_data(int num_threads, int games, int playouts, std::string model_file, const std::string &save_dir) {
   // std::mutex mtx;
   // model_file = "../" + model_file;
-  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>(model_file, num_threads);
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>(model_file, 16);
   auto task = [&, eval, num_threads, playouts, save_dir](int tid, int games) {
       std::shared_ptr<AbstractPlayer> black =
               std::make_shared<MCTSPlayer>(game::Color::BLACK, eval, playouts);
