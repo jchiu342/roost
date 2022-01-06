@@ -87,13 +87,6 @@ std::vector<int> GameState::get_legal_action_indexes() const {
     return {};
   }
   return legal_action_idxes_;
-  /* std::vector<int> ret_val;
-  for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
-    if (is_legal_action(Action(turn_, i))) {
-      ret_val.push_back(i);
-    }
-  }
-  return ret_val; */
 }
 
 void GameState::move(Action action) {
@@ -173,7 +166,6 @@ void GameState::move(Action action) {
       // 4. if not a capture, it cannot be a suicide
       // 1
       if (boards_[0][x][y] != EMPTY) {
-        // std::cout << x << ' ' << y << ' ' << "NOTEMPTY" << std::endl;
         continue;
       }
       // 2
@@ -184,7 +176,6 @@ void GameState::move(Action action) {
       int liberties = 0;
       dfs_liberties_(x, y, turn_, visited, &chain, &liberties);
       if (chain.size() == 4) {
-        // std::cout << x << ' ' << y << ' ' << "CHAIN4" << std::endl;
         continue;
       }
       // 3
@@ -208,72 +199,17 @@ void GameState::move(Action action) {
           }
         }
         if (kill) {
-          // std::cout << x << ' ' << y << ' ' << "REPEAT" << std::endl;
           continue;
         }
       } else if (liberties == 0) {
-        // std::cout << x << ' ' << y << ' ' << "NOLIBS" << std::endl;
         continue;
       }
-      /* if (remove_dead_neighbors_(x, y, (turn_ == BLACK) ? WHITE : BLACK,
-      false)) { bool kill = false; for (int i = 1; i < GAME_HISTORY_LEN; i += 2)
-      { if (memcmp(boards_[0], boards_[i], sizeof(original_board)) == 0) { kill
-      = true; break;
-          }
-        }
-        if (kill) { continue; }
-      } else if (liberties == 0) {
-        // 4
-        continue;
-      } */
       legal_action_idxes_.push_back(x * BOARD_SIZE + y);
     }
   }
   legal_action_idxes_.push_back(BOARD_SIZE * BOARD_SIZE);
   // restore original board
   memcpy(boards_[0], original_board, sizeof(original_board));
-
-  /* for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
-    Action a(turn_, i);
-    if (std::find(std::begin(legal_action_idxes_),
-  std::end(legal_action_idxes_), i) != std::end(legal_action_idxes_)) {
-      // assert(is_legal_play_(a.get_x(), a.get_y(), turn_));
-      if (!is_legal_play_(a.get_x(), a.get_y(), turn_)) {
-        std::cout << to_string() << std::endl;
-        std::cout << a.to_string() << std::endl;
-        std::cout << i << std::endl;
-        for (int x = 0; x < BOARD_SIZE; ++x) {
-          for (int y = 0; y < BOARD_SIZE; ++y) {
-            std::cout << all_liberties[x][y];
-          }
-          std::cout << std::endl;
-        }
-        assert(false);
-      }
-    } else {
-      // assert(!is_legal_play_(a.get_x(), a.get_y(), turn_));
-      if (is_legal_play_(a.get_x(), a.get_y(), turn_)) {
-        std::cout << to_string() << std::endl;
-        std::cout << a.to_string() << std::endl;
-        std::cout << i << std::endl;
-        for (int x = 0; x < BOARD_SIZE; ++x) {
-          for (int y = 0; y < BOARD_SIZE; ++y) {
-            std::cout << all_liberties[x][y];
-          }
-          std::cout << std::endl;
-        }
-        assert(false);
-      }
-    }
-  } */
-
-  /*for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
-    Action a(turn_, i);
-    if (is_legal_play_(a.get_x(), a.get_y(), turn_)) {
-      legal_action_idxes_.push_back(i);
-    }
-  }
-  legal_action_idxes_.push_back(BOARD_SIZE * BOARD_SIZE);*/
   if (turns_ >= MAX_GAME_LENGTH) {
     done_ = true;
     float game_score = score();
@@ -416,9 +352,5 @@ void GameState::dfs_score_(int x, int y, Color opposite_color,
     }
   }
 }
-
-/*int GameState::operator==(const GameState &other) {
-  return 0;
-}*/
 
 } // namespace game

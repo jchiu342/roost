@@ -75,9 +75,9 @@ class OutBlock(nn.Module):
         return p, v
 
 
-class ConnectNet(nn.Module):
+class Net(nn.Module):
     def __init__(self, board_size, num_filters, num_blocks):
-        super(ConnectNet, self).__init__()
+        super(Net, self).__init__()
         self.blocks = [ConvBlock(num_filters, board_size)]
         for i in range(num_blocks):
             self.blocks.append(ResBlock(num_filters))

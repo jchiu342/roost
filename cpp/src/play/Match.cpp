@@ -14,15 +14,13 @@
 
 Match::Match(std::shared_ptr<AbstractPlayer> black,
              std::shared_ptr<AbstractPlayer> white, int num_games,
-             int num_threads, int tid, std::shared_ptr<std::atomic<int>> wins, std::shared_ptr<std::atomic<int>> games)
-    : black_(std::move(black)), white_(std::move(white)), wins_(std::move(wins)),
-      games_(std::move(games)), tid_(tid),
+             int num_threads, int tid, std::shared_ptr<std::atomic<int>> wins,
+             std::shared_ptr<std::atomic<int>> games)
+    : black_(std::move(black)), white_(std::move(white)),
+      wins_(std::move(wins)), games_(std::move(games)), tid_(tid),
       num_games_(num_games), num_threads_(num_threads) {}
 
 int Match::run() {
-  // auto starting_path = fs::current_path();
-  // fs::create_directory(save_dir_);
-  // fs::current_path(save_dir_);
   int black_wins = 0;
   for (int i = tid_; i < num_games_; i += num_threads_) {
     std::string sgf_string = "(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]\nRU[AGA]"
@@ -38,7 +36,6 @@ int Match::run() {
         state.move(move);
         sgf_string += move.to_sgf_string();
       }
-      // std::cout << state.to_string() << std::endl;
     }
     if (state.winner() == game::BLACK) {
       ++black_wins;
@@ -52,12 +49,12 @@ int Match::run() {
     std::ofstream outfile(std::to_string(i) + ".sgf");
     outfile << sgf_string;
     outfile.close();
-    // black_wins += (state.winner() == game::BLACK ? 1 : 0);
 
     int total_games = games_->fetch_add(1);
     int total_wins = wins_->fetch_add(state.winner() == game::BLACK ? 1 : 0);
-    std::cout << state.score() << "; " << total_wins + (state.winner() == game::BLACK ? 1 : 0) << "/" << total_games + 1 << std::endl;
+    std::cout << state.score() << "; "
+              << total_wins + (state.winner() == game::BLACK ? 1 : 0) << "/"
+              << total_games + 1 << std::endl;
   }
-  // fs::current_path(starting_path);
   return black_wins;
 }

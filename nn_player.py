@@ -1,13 +1,8 @@
 import torch
 import numpy as np
-from net import ConnectNet
+from net import Net
 from mcts_player import MCTSPlayer
 from macros import *
-
-
-# model = ConnectNet()
-# model.load_state_dict(torch.load("test0.pth"))
-# model.eval()
 
 
 # returns numpy array for easier storage
@@ -48,8 +43,6 @@ def evaluate(game, model):
 
 class NNPlayer(MCTSPlayer):
     def __init__(self, board_size, color, playouts=50):
-        # super().__init__(board_size, color, evaluate, playouts)
-        self.model = ConnectNet(9, 64, 5)
-        # model.load_state_dict(torch.load("test0.pth"))
+        self.model = Net(9, 32, 4)
         self.model.eval()
         super().__init__(board_size, color, lambda x: evaluate(x, self.model), playouts)

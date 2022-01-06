@@ -68,8 +68,6 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(0 <= best_action_idx &&
          best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1);
   return {color_, best_action_idx};
-  // std::vector<int> legal_move_indexes = state.get_legal_action_indexes();
-  // return {color_, legal_move_indexes[0]};
 }
 
 void MCTSPlayer::reset() { map_.clear(); }
@@ -104,7 +102,6 @@ float MCTSPlayer::visit(const game::GameState &state) {
                   sqrt(std::accumulate(map_[state].N.begin(),
                                        map_[state].N.end(), 1)) /
                   (1 + map_[state].N[legal_idx]);
-    // std::cout << u << std::endl;
     if (u > max_u) {
       max_u = u;
       best_action_idx = legal_idx;
@@ -148,18 +145,9 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
     assert(!std::isnan(values[i]));
     sum += values[i];
   }
-  /*if (sum < 1e-8) {
-    for (int i = 0; i < num_values; i++) {
-      std::cout << values[i] << ' ';
-    }
-    std::cout << std::endl;
-  }*/
   for (size_t i = 0; i < num_values; ++i) {
     values[i] /= sum;
-    if (std::isnan(values[i])) {
-      std::cout << sum << std::endl;
-      assert(false);
-    }
+    assert(!std::isnan(values[i]));
   }
   // apply dirichlet to each P(s, a)
   for (size_t i = 0; i < num_values; ++i) {

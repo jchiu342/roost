@@ -86,8 +86,4 @@ template <> struct std::equal_to<game::GameState> {
   }
 };
 
-/*int operator==(const game::GameState &lhs, const game::GameState &rhs) {
-  return 0;
-}*/
-
 #endif // ROOST_GAMESTATE_H

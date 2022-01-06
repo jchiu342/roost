@@ -14,7 +14,8 @@ class Match {
 public:
   Match(std::shared_ptr<AbstractPlayer> black,
         std::shared_ptr<AbstractPlayer> white, int num_games, int num_threads,
-        int tid, std::shared_ptr<std::atomic<int>> wins, std::shared_ptr<std::atomic<int>> games);
+        int tid, std::shared_ptr<std::atomic<int>> wins,
+        std::shared_ptr<std::atomic<int>> games);
   // returns number of games won by black
   int run();
 

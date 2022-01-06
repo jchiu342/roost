@@ -7,7 +7,7 @@ from collections import defaultdict
 import time
 import random
 import torch
-from net import ConnectNet
+from net import Net
 # TODO: implement N(s, a), etc. as dictionaries to save on transpositions
 
 

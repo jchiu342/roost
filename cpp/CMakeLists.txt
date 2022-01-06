@@ -20,9 +20,9 @@ set(SOURCES src/main.cpp
         src/game/GameState.cpp
         src/play/Match.cpp
         src/player/RandomPlayer.cpp
-        src/player/Evaluator.cpp
         src/player/MCTSPlayer.cpp
-        src/player/NNEvaluator.cpp src/utils/Zobrist.cpp)
+        src/player/NNEvaluator.cpp
+        src/utils/Zobrist.cpp)
 add_executable(roost ${SOURCES})
 target_link_libraries(roost "${TORCH_LIBRARIES}")
 # add_executable(roost src/main.cpp src/game/Action.cpp src/game/Action.h src/game/Game.cpp src/game/Game.h src/game/game_defs.h)
@@ -72,7 +72,6 @@ add_executable(
         src/game/GameState.cpp
         src/play/Match.cpp
         src/player/RandomPlayer.cpp
-        src/player/Evaluator.cpp
         src/player/MCTSPlayer.cpp
         src/player/NNEvaluator.cpp
         src/utils/Zobrist.cpp
@@ -83,5 +82,3 @@ target_link_libraries(
         gtest_main
 )
 target_link_libraries(unit_tests "${TORCH_LIBRARIES}")
-
-# add_test(NAME sample_test COMMAND hello_test)

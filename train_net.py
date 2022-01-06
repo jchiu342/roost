@@ -1,4 +1,4 @@
-from net import ConnectNet, AlphaLoss
+from net import Net, AlphaLoss
 import numpy as np
 from fire import Fire
 from tqdm import tqdm
@@ -11,7 +11,6 @@ from os.path import exists
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
-MODEL_SAVE_FILE = "model_state_dict.pth"
 EPOCH = 50
 BATCH_SIZE = 256
 SAMPLES_PER_EPOCH = 1000
@@ -47,9 +46,9 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
     it = 0
     model.eval()
     with torch.no_grad():
-    	iterator = iter(valset)
-        for i in tqdm(range(SAMPLES_PER_EPOCH)):
-        	state, action, result = iterator.next()
+        iterator = iter(valset)
+        for _ in tqdm(range(SAMPLES_PER_EPOCH)):
+            state, action, result = iterator.next()
             s, a, r = state.to(DEVICE), action.to(DEVICE), result.to(DEVICE)
             pred_policy, pred_value = model(s)
             loss = loss_fn(pred_policy, a, pred_value, r)
@@ -58,7 +57,7 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
     avg_loss = round(total_loss / it, 5)
     print(" val loss: ", avg_loss)
     LOGGER.add_scalar("Val loss", avg_loss, log_iter)
-    save_trace(model, valset, save_name, log_iter)
+    save_trace(model, save_name, log_iter)
 
 
 def train(trainset, valset, model, loss_fn, optimizer, save_name):
@@ -67,7 +66,7 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
         model.train()
         total_loss = 0
         iterator = iter(trainset)
-        for i in tqdm(range(SAMPLES_PER_EPOCH)):
+        for _ in tqdm(range(SAMPLES_PER_EPOCH)):
             state, action, result = iterator.next()
             s, a, r = state.to(DEVICE), action.to(DEVICE), result.to(DEVICE)
             pred_policy, pred_value = model(s)
@@ -79,7 +78,6 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
         avg_loss = round(total_loss / SAMPLES_PER_EPOCH, 5)
         print(" train loss: ", avg_loss)
         LOGGER.add_scalar("Train loss", avg_loss, i)
-        # torch.save(model.state_dict(), MODEL_SAVE_FILE)
 
 
 def start_train(train_dir, val_dir, save_name):
@@ -94,41 +92,20 @@ def start_train(train_dir, val_dir, save_name):
         batch_size=BATCH_SIZE
     )
     # board size, # filters, # blocks
-    model = ConnectNet(9, 32, 4)
+    model = Net(9, 32, 4)
     # model.load_state_dict(torch.load("model_state_dict.pth19.pth"))
     model = model.to(DEVICE)
     loss_fn = AlphaLoss()
     optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
-    if not exists(MODEL_SAVE_FILE):
-        temp = open(MODEL_SAVE_FILE, "w")
-        temp.close()
     train(trainset, valset, model, loss_fn, optimizer, save_name)
 
 
-def save_trace(model, valset, trace_file_name, log_iter):
+def save_trace(model, trace_file_name, log_iter):
     model = model.to(torch.device("cpu"))
     torch.save(model.state_dict(), trace_file_name + str(log_iter) + ".pth")
     scripted_model = torch.jit.script(model)
     scripted_model.save(trace_file_name + str(log_iter) + ".pt")
-    print("saved " + trace_file_name + str(log_iter) + ".pt")
-    model = model.to(DEVICE)
-    # for state, action, result in tqdm(valset):
-    #    traced_script_module = torch.jit.trace(model, state.to(DEVICE))
-    #    traced_script_module.save(trace_file)
-    #    print("saved " + trace_file)
-    #    break
-
-
-# def trace(val_file, trace_file):
-#     valset = torch.utils.data.DataLoader(
-#         GameDataset(val_file),
-#         batch_size=BATCH_SIZE
-#     )
-#     model = ConnectNet()
-#     for state, action, result in tqdm(valset):
-#         traced_script_module = torch.jit.trace(model, state)
-#         traced_script_module.save(trace_file)
-#         break
+    print("saved " + trace_file_name + str(log_iter) + ".pt/.pth")
 
 
 if __name__ == "__main__":

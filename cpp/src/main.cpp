@@ -16,12 +16,15 @@ using namespace game;
 namespace fs = std::filesystem;
 
 void generate_data(int num_threads, int games, int playouts,
-                   std::string model_file, const std::string &save_dir) {
+                   const std::string& model_file, const std::string &save_dir) {
   std::shared_ptr<Evaluator> eval =
       std::make_shared<NNEvaluator>(model_file, 16);
-  std::shared_ptr<std::atomic<int>> win_counter = std::make_shared<std::atomic<int>>(0);
-  std::shared_ptr<std::atomic<int>> game_counter = std::make_shared<std::atomic<int>>(0);
-  auto task = [&, eval, num_threads, playouts, win_counter, game_counter](int tid, int games) {
+  std::shared_ptr<std::atomic<int>> win_counter =
+      std::make_shared<std::atomic<int>>(0);
+  std::shared_ptr<std::atomic<int>> game_counter =
+      std::make_shared<std::atomic<int>>(0);
+  auto task = [&, eval, num_threads, playouts, win_counter,
+               game_counter](int tid, int games) {
     std::shared_ptr<AbstractPlayer> black =
         std::make_shared<MCTSPlayer>(game::Color::BLACK, eval, playouts);
     std::shared_ptr<AbstractPlayer> white =
@@ -43,7 +46,7 @@ void generate_data(int num_threads, int games, int playouts,
   fs::current_path(starting_path);
 }
 
-int test_strength(std::string black_model_file, std::string white_model_file,
+int test_strength(const std::string& black_model_file, const std::string& white_model_file,
                   int num_threads, int games, int playouts,
                   const std::string &save_dir) {
   int black_wins = 0;
@@ -52,10 +55,12 @@ int test_strength(std::string black_model_file, std::string white_model_file,
       std::make_shared<NNEvaluator>(black_model_file, 16);
   std::shared_ptr<Evaluator> w_eval =
       std::make_shared<NNEvaluator>(white_model_file, 16);
-  std::shared_ptr<std::atomic<int>> win_counter = std::make_shared<std::atomic<int>>(0);
-  std::shared_ptr<std::atomic<int>> game_counter = std::make_shared<std::atomic<int>>(0);
-  auto task = [b_eval, w_eval, num_threads, &black_wins,
-               &mtx, win_counter, game_counter](int tid, int games, int playouts) {
+  std::shared_ptr<std::atomic<int>> win_counter =
+      std::make_shared<std::atomic<int>>(0);
+  std::shared_ptr<std::atomic<int>> game_counter =
+      std::make_shared<std::atomic<int>>(0);
+  auto task = [b_eval, w_eval, num_threads, &black_wins, &mtx, win_counter,
+               game_counter](int tid, int games, int playouts) {
     std::shared_ptr<AbstractPlayer> black = std::make_shared<MCTSPlayer>(
         game::Color::BLACK, b_eval, playouts, true);
     std::shared_ptr<AbstractPlayer> white = std::make_shared<MCTSPlayer>(
