@@ -11,7 +11,7 @@ from os.path import exists
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
-EPOCH = 50
+EPOCH = 75
 BATCH_SIZE = 256
 SAMPLES_PER_EPOCH = 1000
 
@@ -106,6 +106,7 @@ def save_trace(model, trace_file_name, log_iter):
     scripted_model = torch.jit.script(model)
     scripted_model.save(trace_file_name + str(log_iter) + ".pt")
     print("saved " + trace_file_name + str(log_iter) + ".pt/.pth")
+    model = model.to(DEVICE)
 
 
 if __name__ == "__main__":
