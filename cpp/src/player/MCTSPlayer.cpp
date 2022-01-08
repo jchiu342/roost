@@ -49,7 +49,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
     std::uniform_int_distribution<> dist(1, playouts_);
     int vis_num = dist(gen_);
     int counter = 0;
-    for (int legal_idx : state.get_legal_action_indexes()) {
+    for (int legal_idx : *(state.get_legal_action_indexes())) {
       counter += map_[state].N[legal_idx];
       if (counter >= vis_num) {
         assert(0 <= legal_idx && legal_idx <= BOARD_SIZE * BOARD_SIZE + 1);
@@ -59,7 +59,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
   }
   int best_action_idx = -1;
   int max_visits = -1;
-  for (int legal_idx : state.get_legal_action_indexes()) {
+  for (int legal_idx : *(state.get_legal_action_indexes())) {
     if (map_[state].N[legal_idx] > max_visits) {
       best_action_idx = legal_idx;
       max_visits = map_[state].N[legal_idx];
@@ -92,7 +92,7 @@ float MCTSPlayer::visit(const game::GameState &state) {
   // equivalent to neginf
   float max_u = -100000000.0f;
   int best_action_idx = -1;
-  for (int legal_idx : state.get_legal_action_indexes()) {
+  for (int legal_idx : *(state.get_legal_action_indexes())) {
     // u = Q(s, a) + cpuct * P(s, a) * sqrt(sum_a N(s, a)) / (1 + N(s, a))
     // TODO: correct this math. currently this does sum_a N(s, a) + 1 to explore
     // the max-policy action on the first playout, but this doesn't seem to be
@@ -108,14 +108,6 @@ float MCTSPlayer::visit(const game::GameState &state) {
     }
   }
   game::GameState state_copy = state;
-  if (!(0 <= best_action_idx &&
-        best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1)) {
-    std::cout << best_action_idx << std::endl;
-    std::cout << state.get_legal_action_indexes().size() << std::endl;
-    assert(false);
-  }
-  // assert(0 <= best_action_idx && best_action_idx <= BOARD_SIZE * BOARD_SIZE +
-  // 1);
   state_copy.move(game::Action(state.get_turn(), best_action_idx));
   float v = visit(state_copy);
   // if we're white, we want to store -v, since we're trying to minimize the
@@ -133,7 +125,7 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
   if (state.done()) {
     return;
   }
-  const std::vector<int> legal_actions = state.get_legal_action_indexes();
+  const std::vector<int> legal_actions = *state.get_legal_action_indexes();
   size_t num_values = legal_actions.size();
   // generate dirichlet-distributed vector
   std::gamma_distribution<float> d(DIRICHLET_ALPHA, 1);

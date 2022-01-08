@@ -80,13 +80,13 @@ bool GameState::is_legal_action(Action action) const {
   return is_legal_play_(action.get_x(), action.get_y(), action.get_color()); */
 }
 
-std::vector<int> GameState::get_legal_action_indexes() const {
+const std::vector<int> *GameState::get_legal_action_indexes() const {
   // action indexes go from 0 to BOARD_SIZE * BOARD_SIZE + 1
   // does NOT include resign, as stated in the header
   if (done_) {
-    return {};
+    return nullptr;
   }
-  return legal_action_idxes_;
+  return &legal_action_idxes_;
 }
 
 void GameState::move(Action action) {

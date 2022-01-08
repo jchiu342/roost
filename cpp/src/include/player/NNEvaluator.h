@@ -26,7 +26,7 @@ public:
     Batch(std::shared_ptr<torch::jit::script::Module> module, int threads)
         : module_(std::move(module)), loaded_threads_(0), threads_(threads),
           done_processing_(false) {
-      input_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE});
+      input_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE}).set_requires_grad(false);
     }
     // it is the caller's responsibility to ensure no duplicate slots
     Evaluation Evaluate(const game::GameState &state, int slot) {
