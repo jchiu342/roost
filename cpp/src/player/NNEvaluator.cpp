@@ -8,6 +8,7 @@ using namespace torch;
 NNEvaluator::NNEvaluator(const std::string &input_file, const int batch_size)
     : batch_size_(batch_size), global_counter_(0) {
   try {
+    std::cout << "loading model\n";
     module_ = std::make_shared<torch::jit::script::Module>();
     // *module_ = torch::jit::load(input_file);
     *module_ = torch::jit::load(input_file, torch::kCUDA);

@@ -82,7 +82,7 @@ public:
         // TODO: confirm that we evaluate predicate before locking for the first
         // time. otherwise there is a bug here
         using namespace std::chrono_literals;
-        cv_.wait_until(ul, now + 20ms, [this] { return done_processing_; });
+        cv_.wait_until(ul, now + 75ms, [this] { return done_processing_; });
         if (!done_processing_) {
           std::cout << "program will hang; feeding input\n";
           std::vector<torch::jit::IValue> inputs;

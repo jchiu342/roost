@@ -101,7 +101,7 @@ TEST(PlayerTest, SpeedTest) {
     }
     auto task = [&eval, &states](int tid) {
         float ret = 0;
-        for (size_t i = 0; i < 1000; ++i) {
+        for (size_t i = 0; i < 200; ++i) {
           Evaluator::Evaluation x = eval->Evaluate(states[tid]);
           // prevent evaluation from being optimized away
           ret += x.value_;
