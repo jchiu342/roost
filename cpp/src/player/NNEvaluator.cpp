@@ -12,6 +12,7 @@ NNEvaluator::NNEvaluator(const std::string &input_file, const int batch_size)
     // *module_ = torch::jit::load(input_file);
     *module_ = torch::jit::load(input_file, torch::kCUDA);
     module_->eval();
+    std::cout << "model loaded successfully\n";
   } catch (const c10::Error &e) {
     std::cerr << "error loading the model\n";
     std::cout << e.what() << std::endl;
