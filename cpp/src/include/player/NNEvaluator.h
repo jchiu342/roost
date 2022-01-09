@@ -6,8 +6,11 @@
 #define ROOST_NNEVALUATOR_H
 #include "Evaluator.h"
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
+#include <ctime>
 #include <memory>
+#include <mutex>
 #include <torch/script.h>
 #include <torch/torch.h>
 #include <unordered_map>
@@ -73,11 +76,26 @@ public:
         done_processing_ = true;
         cv_.notify_all();
       } else {
-        // otherwise, we block until finished
+        // otherwise, we block until finished or until some time passes
+        auto now = std::chrono::steady_clock::now();
         std::unique_lock<std::mutex> ul(mtx_);
         // TODO: confirm that we evaluate predicate before locking for the first
         // time. otherwise there is a bug here
-        cv_.wait(ul, [this] { return done_processing_; });
+        using namespace std::chrono_literals;
+        cv_.wait_until(ul, now + 20ms, [this] { return done_processing_; });
+        if (!done_processing_) {
+          std::cout << "program will hang; feeding input\n";
+          std::vector<torch::jit::IValue> inputs;
+          inputs.emplace_back(input_.to(at::kCUDA));
+          // inputs.emplace_back(input_);
+          auto output = module_->forward(inputs).toTuple()->elements();
+          // policy_output_ = output[0].toTensor();
+          // value_output_ = output[1].toTensor();
+          policy_output_ = output[0].toTensor().to(torch::kCPU);
+          value_output_ = output[1].toTensor().to(torch::kCPU);
+          done_processing_ = true;
+          cv_.notify_all();
+        }
       }
       std::vector<float> policy(
           policy_output_.data_ptr<float>() +

@@ -6,6 +6,7 @@
 #include <torch/script.h>
 #include <chrono>
 #include <string>
+#include <mutex>
 #include "game/GameState.h"
 #include "player/RandomPlayer.h"
 #include "player/Evaluator.h"
@@ -47,7 +48,7 @@ TEST(PlayerTest, DISABLED_NNTest) {
 // test NNEvaluator correctness under multiple threads
 TEST(PlayerTest, MultiThreadNNTest) {
   size_t num_threads = 16;
-  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt", num_threads);
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("net1.pt", num_threads);
   std::vector<game::GameState> states;
   std::vector<float> evals;
   states.reserve(num_threads);
@@ -73,7 +74,7 @@ TEST(PlayerTest, MultiThreadNNTest) {
     threads[i].join();
   }
   // check correctness against single-thread mode
-  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator>("4x32_net1.pt", 1);
+  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator>("net1.pt", 1);
   for (size_t i = 0; i < num_threads; ++i) {
     Evaluator::Evaluation x = st_eval->Evaluate(states[i]);
     // account for some rounding errors
@@ -83,12 +84,12 @@ TEST(PlayerTest, MultiThreadNNTest) {
 }
 
 // TODO: perhaps integrate Google Benchmark or some other tool for more accurate measurement
-TEST(PlayerTest, DISABLED_SpeedTest) {
+TEST(PlayerTest, SpeedTest) {
   double sum = 0.0;
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {
     size_t num_threads = 16;
-    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("4x32_net1.pt", num_threads);
+    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("net1.pt", 4);
     std::vector<game::GameState> states;
     states.reserve(num_threads);
     RandomPlayer black_player(game::Color::BLACK);
@@ -100,7 +101,7 @@ TEST(PlayerTest, DISABLED_SpeedTest) {
     }
     auto task = [&eval, &states](int tid) {
         float ret = 0;
-        for (size_t i = 0; i < 800; ++i) {
+        for (size_t i = 0; i < 1000; ++i) {
           Evaluator::Evaluation x = eval->Evaluate(states[tid]);
           // prevent evaluation from being optimized away
           ret += x.value_;
@@ -126,4 +127,19 @@ TEST(PlayerTest, DISABLED_SpeedTest) {
     std::cout << "time taken: " << std::fixed << diff.count() << "s\n";
   }
   std::cout << "avg: " << std::fixed << sum / (num_iters - 1) << std::endl;
+}
+
+TEST(PlayerTest, MutexBehaviorTest) {
+  bool fx = true;
+  std::mutex mtx;
+  std::condition_variable cv;
+  auto task = [&mtx, &cv, &fx](){
+    std::unique_lock<std::mutex> lock;
+    cv.wait(lock, [&](){return fx;});
+    std::cout << "out of mtx" << std::endl;
+  };
+  std::thread t(task);
+  t.join();
+  std::unique_lock<std::mutex> lock;
+  std::cout << "done" << std::endl;
 }
