@@ -38,7 +38,7 @@ public:
   [[nodiscard]] bool is_legal_action(Action action) const;
   // returns empty vector if the game is done; otherwise, there is always >=1
   // legal move (pass) does NOT include resign, which is always legal
-  [[nodiscard]] std::vector<int> get_legal_action_indexes() const;
+  [[nodiscard]] const std::vector<int> *get_legal_action_indexes() const;
   void move(Action action);
   [[nodiscard]] size_t hash() const;
   [[nodiscard]] std::string to_string() const;
@@ -82,7 +82,7 @@ template <> struct std::equal_to<game::GameState> {
   bool operator()(const game::GameState &lhs,
                   const game::GameState &rhs) const {
     return lhs.hash() == rhs.hash() &&
-           lhs.get_legal_action_indexes() == rhs.get_legal_action_indexes();
+           *lhs.get_legal_action_indexes() == *rhs.get_legal_action_indexes();
   }
 };
 

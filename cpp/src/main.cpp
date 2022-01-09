@@ -18,7 +18,7 @@ namespace fs = std::filesystem;
 void generate_data(int num_threads, int games, int playouts,
                    const std::string& model_file, const std::string &save_dir) {
   std::shared_ptr<Evaluator> eval =
-      std::make_shared<NNEvaluator>(model_file, 16);
+      std::make_shared<NNEvaluator>(model_file, 1);
   std::shared_ptr<std::atomic<int>> win_counter =
       std::make_shared<std::atomic<int>>(0);
   std::shared_ptr<std::atomic<int>> game_counter =

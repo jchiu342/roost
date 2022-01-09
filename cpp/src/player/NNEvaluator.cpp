@@ -28,6 +28,10 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   // each request is assigned a unique counter
   const int counter = global_counter_;
   ++global_counter_;
+  // prevent counter overflow
+  if (global_counter_ == batch_size_ * 1e7) {
+    global_counter_ = 0;
+  }
   const int batch_idx = counter / batch_size_;
   // if previous batches are full, start a new one
   if (counter % batch_size_ == 0) {
