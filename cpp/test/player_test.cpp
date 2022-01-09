@@ -31,7 +31,7 @@ TEST(PlayerTest, DISABLED_PlayerGameTest) {
 
 TEST(PlayerTest, DISABLED_NNTest) {
   game::GameState state(7.5);
-  std::unique_ptr<Evaluator> eval = std::make_unique<NNEvaluator>("traced_model.pt");
+  std::unique_ptr<Evaluator> eval = std::make_unique<NNEvaluator<1>>("traced_model.pt");
   MCTSPlayer black_player(game::Color::BLACK, std::move(eval));
   RandomPlayer white_player(game::Color::WHITE);
   while (!state.done()) {
@@ -47,8 +47,8 @@ TEST(PlayerTest, DISABLED_NNTest) {
 
 // test NNEvaluator correctness under multiple threads
 TEST(PlayerTest, MultiThreadNNTest) {
-  size_t num_threads = 16;
-  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("net1.pt", num_threads);
+  constexpr size_t num_threads = 16;
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("net1.pt");
   std::vector<game::GameState> states;
   std::vector<float> evals;
   states.reserve(num_threads);
@@ -74,7 +74,7 @@ TEST(PlayerTest, MultiThreadNNTest) {
     threads[i].join();
   }
   // check correctness against single-thread mode
-  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator>("net1.pt", 1);
+  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator<1>>("net1.pt");
   for (size_t i = 0; i < num_threads; ++i) {
     Evaluator::Evaluation x = st_eval->Evaluate(states[i]);
     // account for some rounding errors
@@ -89,7 +89,7 @@ TEST(PlayerTest, SpeedTest) {
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {
     size_t num_threads = 16;
-    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator>("net1.pt", 4);
+    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<4>>("net1.pt");
     std::vector<game::GameState> states;
     states.reserve(num_threads);
     RandomPlayer black_player(game::Color::BLACK);

@@ -21,15 +21,18 @@
 #define NUM_FILTERS 64
 
 using namespace torch;
-
+template<int threads>
 class NNEvaluator : public Evaluator {
 public:
+  // template<int threads>
   class Batch {
   public:
-    Batch(std::shared_ptr<torch::jit::script::Module> module, int threads)
+    Batch(std::shared_ptr<torch::jit::script::Module> module)
         : module_(std::move(module)), loaded_threads_(0), threads_(threads),
           done_processing_(false) {
-      input_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE}).set_requires_grad(false);
+      memset(input_, 0, sizeof(input_));
+      // input_ = new int[threads][5][BOARD_SIZE][BOARD_SIZE];
+      // input_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE}).set_requires_grad(false);
     }
     // it is the caller's responsibility to ensure no duplicate slots
     Evaluation Evaluate(const game::GameState &state, int slot) {
@@ -65,9 +68,10 @@ public:
       }
       // if we are the last thread to finish, we do the evaluation
       if (loaded_threads_.fetch_add(1) == threads_ - 1) {
+        Tensor input_tensor = torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
         std::vector<torch::jit::IValue> inputs;
-        inputs.emplace_back(input_.to(at::kCUDA));
-        // inputs.emplace_back(input_);
+        inputs.emplace_back(input_tensor.to(at::kCUDA));
+        // inputs.emplace_back(input_tensor);
         auto output = module_->forward(inputs).toTuple()->elements();
         // policy_output_ = output[0].toTensor();
         // value_output_ = output[1].toTensor();
@@ -85,9 +89,10 @@ public:
         cv_.wait_until(ul, now + 75ms, [this] { return done_processing_; });
         if (!done_processing_) {
           std::cout << "program will hang; feeding input\n";
+          Tensor input_tensor = torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
           std::vector<torch::jit::IValue> inputs;
-          inputs.emplace_back(input_.to(at::kCUDA));
-          // inputs.emplace_back(input_);
+          inputs.emplace_back(input_tensor.to(at::kCUDA));
+          // inputs.emplace_back(input_tensor);
           auto output = module_->forward(inputs).toTuple()->elements();
           // policy_output_ = output[0].toTensor();
           // value_output_ = output[1].toTensor();
@@ -106,7 +111,8 @@ public:
     }
 
     std::shared_ptr<torch::jit::script::Module> module_;
-    Tensor input_;
+    int input_[threads][5][BOARD_SIZE][BOARD_SIZE];
+    // Tensor input_;
     Tensor policy_output_;
     Tensor value_output_;
     std::atomic<int> loaded_threads_;
@@ -116,8 +122,7 @@ public:
     bool done_processing_;
   };
 
-  explicit NNEvaluator(const std::string &input_file = "",
-                       const int batch_size = 1);
+  explicit NNEvaluator(const std::string &input_file = "");
   Evaluation Evaluate(const game::GameState &state) override;
 
 private:
@@ -131,5 +136,58 @@ private:
   // protects maps and global counter
   std::mutex mtx_;
 };
+
+template<int threads>
+NNEvaluator<threads>::NNEvaluator(const std::string &input_file)
+    : batch_size_(threads), global_counter_(0) {
+  try {
+    std::cout << "loading model\n";
+    module_ = std::make_shared<torch::jit::script::Module>();
+    // *module_ = torch::jit::load(input_file);
+    *module_ = torch::jit::load(input_file, torch::kCUDA);
+    module_->eval();
+    std::cout << "model loaded successfully\n";
+  } catch (const c10::Error &e) {
+    std::cerr << "error loading the model\n";
+    std::cout << e.what() << std::endl;
+    assert(false);
+  }
+}
+
+// TODO: refactor this so it doesn't break abstraction for gamestate
+template<int threads>
+Evaluator::Evaluation NNEvaluator<threads>::Evaluate(const game::GameState &state) {
+  if (state.done()) {
+    return {{}, (state.winner() == game::BLACK ? 1.0f : -1.0f)};
+  }
+  mtx_.lock();
+  // each request is assigned a unique counter
+  const int counter = global_counter_;
+  ++global_counter_;
+  // prevent counter overflow
+  if (global_counter_ == batch_size_ * 1e7) {
+    global_counter_ = 0;
+  }
+  const int batch_idx = counter / batch_size_;
+  // if previous batches are full, start a new one
+  if (counter % batch_size_ == 0) {
+    counters_[batch_idx] = 0;
+    batch_map_[batch_idx] = std::make_shared<Batch>(module_);
+  }
+  std::shared_ptr<Batch> batch = batch_map_[batch_idx];
+  mtx_.unlock();
+  Evaluation return_eval = batch->Evaluate(state, counter % batch_size_);
+  mtx_.lock();
+  if (++counters_[batch_idx] < batch_size_) {
+    // not the last thread; we can leave
+    mtx_.unlock();
+    return return_eval;
+  }
+  // last thread is responsible for deallocation + erase
+  batch_map_.erase(batch_idx);
+  counters_.erase(batch_idx);
+  mtx_.unlock();
+  return return_eval;
+}
 
 #endif // ROOST_NNEVALUATOR_H

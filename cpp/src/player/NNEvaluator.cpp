@@ -4,9 +4,10 @@
 #include <torch/torch.h>
 
 using namespace torch;
-
-NNEvaluator::NNEvaluator(const std::string &input_file, const int batch_size)
-    : batch_size_(batch_size), global_counter_(0) {
+/*
+template<int threads>
+NNEvaluator<threads>::NNEvaluator(const std::string &input_file)
+    : batch_size_(threads), global_counter_(0) {
   try {
     std::cout << "loading model\n";
     module_ = std::make_shared<torch::jit::script::Module>();
@@ -22,7 +23,8 @@ NNEvaluator::NNEvaluator(const std::string &input_file, const int batch_size)
 }
 
 // TODO: refactor this so it doesn't break abstraction for gamestate
-Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
+template<int threads>
+Evaluator::Evaluation NNEvaluator<threads>::Evaluate(const game::GameState &state) {
   if (state.done()) {
     return {{}, (state.winner() == game::BLACK ? 1.0f : -1.0f)};
   }
@@ -54,4 +56,4 @@ Evaluator::Evaluation NNEvaluator::Evaluate(const game::GameState &state) {
   counters_.erase(batch_idx);
   mtx_.unlock();
   return return_eval;
-}
+}*/
