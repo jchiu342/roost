@@ -53,6 +53,9 @@ private:
   unsigned turns_;
   unsigned passes_;
   bool done_;
+  std::pair<int, int> uf_chains_[BOARD_SIZE][BOARD_SIZE];
+  std::set<std::pair<int, int>> chain_lists_[BOARD_SIZE][BOARD_SIZE];
+  int liberties_[BOARD_SIZE][BOARD_SIZE];
   // this is valid UNLESS done_ = true
   std::vector<int> legal_action_idxes_;
   std::shared_ptr<Zobrist> zobrist_;
@@ -66,6 +69,11 @@ private:
                       int *liberties) const;
   void dfs_score_(int x, int y, Color opposite_color,
                   bool reachable[][BOARD_SIZE]) const;
+  void update_liberties_at_head_(int x, int y);
+  void uf_make_(int x, int y);
+  std::pair<int, int> uf_find_(int x, int y, bool from_delete = false);
+  void uf_union_(int x1, int y1, int x2, int y2);
+  void uf_delete_(int x1, int y1);
 };
 
 } // namespace game

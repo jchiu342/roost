@@ -10,7 +10,7 @@
 using namespace game;
 
 // Demonstrate ko logic
-TEST(GameTest, DISABLED_GameStateLogicTest) {
+TEST(GameTest, GameStateLogicTest) {
   GameState state(7.5);
   std::cout << state.to_string() << std::endl;
   state.move(Action(Color::BLACK, ActionType::PLAY, 0, 2));
@@ -39,7 +39,7 @@ TEST(GameTest, DISABLED_GameStateLogicTest) {
   EXPECT_EQ(state.score(), -2.5);
 }
 
-TEST(GameTest, DISABLED_GameStateLogicTest2) {
+TEST(GameTest, GameStateLogicTest2) {
 GameState state(7.5);
   std::cout << state.to_string() << std::endl;
   state.move(Action(Color::BLACK, ActionType::PLAY, 0, 0));
@@ -63,4 +63,34 @@ GameState state(7.5);
   state.move(Action(Color::WHITE, ActionType::PLAY, 0, 1));
   std::cout << state.to_string() << std::endl;
   EXPECT_EQ(state.score(), -7.5);
+}
+
+TEST(GameTest, GameStateLogicTest3) {
+  GameState state(7.5);
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::BLACK, ActionType::PLAY, 6, 2));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::WHITE, ActionType::PASS));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::BLACK, ActionType::PLAY, 5, 2));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::WHITE, ActionType::PASS));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::BLACK, ActionType::PLAY, 8, 0));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::WHITE, ActionType::PASS));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::BLACK, ActionType::PLAY, 8, 1));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::WHITE, ActionType::PASS));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::BLACK, ActionType::PLAY, 7, 1));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::WHITE, ActionType::PASS));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::BLACK, ActionType::PLAY, 6, 1));
+  std::cout << state.to_string() << std::endl;
+  state.move(Action(Color::WHITE, ActionType::PLAY, 0, 1));
+  std::cout << state.to_string() << std::endl;
+  // EXPECT_EQ(state.score(), -7.5);
 }
