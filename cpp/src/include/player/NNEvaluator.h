@@ -31,6 +31,8 @@ public:
         : module_(std::move(module)), loaded_threads_(0), threads_(threads),
           done_processing_(false) {
       memset(input_, 0, sizeof(input_));
+      // input_tensor_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE});
+
       // input_ = new int[threads][5][BOARD_SIZE][BOARD_SIZE];
       // input_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE}).set_requires_grad(false);
     }
@@ -42,33 +44,54 @@ public:
         for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
           if (*(index_0 + i) == game::BLACK) {
             input_[slot][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+            // input_tensor_[slot][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           } else if (*(index_0 + i) == game::WHITE) {
             input_[slot][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+            // input_tensor_[slot][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           }
           if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::BLACK) {
             input_[slot][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+            // input_tensor_[slot][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           } else if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::WHITE) {
             input_[slot][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+            // input_tensor_[slot][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           }
           input_[slot][4][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+          // input_tensor_[slot][4][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
         }
       } else {
         for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
           if (*(index_0 + i) == game::BLACK) {
             input_[slot][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+            // input_tensor_[slot][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           } else if (*(index_0 + i) == game::WHITE) {
             input_[slot][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+            // input_tensor_[slot][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           }
           if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::BLACK) {
             input_[slot][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+            // input_tensor_[slot][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           } else if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::WHITE) {
             input_[slot][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
+            // input_tensor_[slot][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           }
         }
       }
       // if we are the last thread to finish, we do the evaluation
       if (loaded_threads_.fetch_add(1) == threads_ - 1) {
-        Tensor input_tensor = torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
+        Tensor input_tensor = torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE}, TensorOptions().dtype(kFloat));
+        /* for (auto x0 = 0; x0 < threads_; ++x0) {
+          for (auto x1 = 0; x1 < 5; ++x1) {
+            for (auto x2 = 0; x2 < BOARD_SIZE; ++x2) {
+              for (auto x3 = 0; x3 < BOARD_SIZE; ++x3) {
+                if (input_tensor[x0][x1][x2][x3].item<float>() != input_tensor_[x0][x1][x2][x3].item<float>()) {
+                  std::cout << "mismatch at " << x0 << ' ' << x1 << ' ' << x2 << ' ' << x3 << ' ' << std::endl;
+                  std::cout << "tensor value: " << input_tensor[x0][x1][x2][x3].item<long>() << "; tensor_ value: " << input_tensor_[x0][x1][x2][x3].item<long>();
+                }
+              }
+            }
+          }
+        }*/
         std::vector<torch::jit::IValue> inputs;
         inputs.emplace_back(input_tensor.to(at::kCUDA));
         // inputs.emplace_back(input_tensor);
@@ -86,7 +109,7 @@ public:
         // TODO: confirm that we evaluate predicate before locking for the first
         // time. otherwise there is a bug here
         using namespace std::chrono_literals;
-        cv_.wait_until(ul, now + 75ms, [this] { return done_processing_; });
+        cv_.wait_until(ul, now + 600ms, [this] { return done_processing_; });
         if (!done_processing_) {
           std::cout << "program will hang; feeding input\n";
           Tensor input_tensor = torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
@@ -111,8 +134,8 @@ public:
     }
 
     std::shared_ptr<torch::jit::script::Module> module_;
-    int input_[threads][5][BOARD_SIZE][BOARD_SIZE];
-    // Tensor input_;
+    float input_[threads][5][BOARD_SIZE][BOARD_SIZE];
+    // Tensor input_tensor_;
     Tensor policy_output_;
     Tensor value_output_;
     std::atomic<int> loaded_threads_;
