@@ -71,7 +71,7 @@ private:
                   bool reachable[][BOARD_SIZE]) const;
   void update_liberties_at_head_(int x, int y);
   void uf_make_(int x, int y);
-  std::pair<int, int> uf_find_(int x, int y, bool from_delete = false);
+  std::pair<int, int> uf_find_(int x, int y);
   void uf_union_(int x1, int y1, int x2, int y2);
   void uf_delete_(int x1, int y1);
 };

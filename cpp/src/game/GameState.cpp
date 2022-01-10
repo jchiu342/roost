@@ -187,62 +187,6 @@ void GameState::move(Action action) {
 
   // calculate all legal actions
   legal_action_idxes_.clear();
-  // get liberties of all groups on the board
-  int all_liberties[BOARD_SIZE][BOARD_SIZE];
-  // int chain_lengths[BOARD_SIZE][BOARD_SIZE];
-  memset(all_liberties, 0, sizeof(all_liberties));
-  // memset(chain_lengths, 0, sizeof(chain_lengths));
-  for (int x = 0; x < BOARD_SIZE; ++x) {
-    for (int y = 0; y < BOARD_SIZE; ++y) {
-      if (boards_[0][x][y] != EMPTY && all_liberties[x][y] == 0) {
-        int liberties = 0;
-        bool visited[BOARD_SIZE][BOARD_SIZE];
-        memset(visited, false, sizeof(visited));
-        std::set<std::pair<int, int>> chain;
-        dfs_liberties_(x, y, boards_[0][x][y], visited, &chain, &liberties);
-        assert(liberties >= 1);
-        for (const std::pair<int, int> &coord : chain) {
-          all_liberties[coord.first][coord.second] = liberties;
-          // chain_lengths[coord.first][coord.second] = chain.size();
-        }
-      }
-    }
-  }
-  bool mismatch = false;
-  for (int x = 0; x < BOARD_SIZE; ++x) {
-    for (int y = 0; y < BOARD_SIZE; ++y) {
-      if (boards_[0][x][y] != EMPTY) {
-        auto head = uf_find_(x, y);
-        if (all_liberties[head.first][head.second] != liberties_[head.first][head.second]) {
-          std::cout << "lib mismatch at " << x << ' ' << y << "; head: " << head.first << ' ' << head.second << std::endl;
-          mismatch = true;
-        }
-      }
-    }
-  }
-  if (mismatch) {
-    std::cout << to_string() << std::endl;
-    for (int x = 0; x < BOARD_SIZE; ++x) {
-      for (int y = 0; y < BOARD_SIZE; ++y) {
-        std::cout << all_liberties[x][y];
-      }
-      std::cout << std::endl;
-    }
-    std::cout << "\n";
-    for (int x = 0; x < BOARD_SIZE; ++x) {
-      for (int y = 0; y < BOARD_SIZE; ++y) {
-        std::cout << liberties_[x][y];
-      }
-      std::cout << std::endl;
-    }
-  std::cout << "\n";
-  for (int x = 0; x < BOARD_SIZE; ++x) {
-    for (int y = 0; y < BOARD_SIZE; ++y) {
-      std::cout << uf_chains_[x][y].first << uf_chains_[x][y].second << ' ';
-    }
-    std::cout << std::endl;
-  }
-  }
   Color original_board[BOARD_SIZE][BOARD_SIZE];
   memcpy(original_board, boards_[0], sizeof(original_board));
   bool dirty_board = false;
@@ -341,74 +285,6 @@ void GameState::move(Action action) {
       winner_ = BLACK;
     else if (game_score < -1e-8)
       winner_ = WHITE;
-  }
-
-  std::vector<int> legal_action_idxes2;
-  Color original_board2[BOARD_SIZE][BOARD_SIZE];
-  memcpy(original_board2, boards_[0], sizeof(original_board));
-  for (int x = 0; x < BOARD_SIZE; ++x) {
-    for (int y = 0; y < BOARD_SIZE; ++y) {
-      // reset to original board
-      memcpy(boards_[0], original_board, sizeof(original_board));
-      // action is legal if:
-      // 1. empty space
-      // 2. no chain of 4 stones
-      // 3. if a capture, it does not repeat previous game state
-      // 4. if not a capture, it cannot be a suicide
-      // 1
-      if (boards_[0][x][y] != EMPTY) {
-        continue;
-      }
-      // 2
-      boards_[0][x][y] = turn_;
-      bool visited[BOARD_SIZE][BOARD_SIZE];
-      memset(visited, false, sizeof(visited));
-      std::set<std::pair<int, int>> chain;
-      int liberties = 0;
-      dfs_liberties_(x, y, turn_, visited, &chain, &liberties);
-      if (chain.size() == 4) {
-        continue;
-      }
-      // 3
-      bool capture = false;
-      Color opposite = (turn_ == BLACK) ? WHITE : BLACK;
-      for (const auto a : neighbors) {
-        if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
-            a[1] + y < BOARD_SIZE &&
-            boards_[0][a[0] + x][a[1] + y] == opposite &&
-            all_liberties[a[0] + x][a[1] + y] == 1) {
-          capture = true;
-          dfs_remove_chain_(a[0] + x, a[1] + y, opposite);
-        }
-      }
-      if (capture) {
-        bool kill = false;
-        for (int i = 1; i < GAME_HISTORY_LEN; i += 2) {
-          if (memcmp(boards_[0], boards_[i], sizeof(boards_[0])) == 0) {
-            kill = true;
-            break;
-          }
-        }
-        if (kill) {
-          continue;
-        }
-      } else if (liberties == 0) {
-        continue;
-      }
-      legal_action_idxes2.push_back(x * BOARD_SIZE + y);
-    }
-  }
-  legal_action_idxes2.push_back(BOARD_SIZE * BOARD_SIZE);
-  // restore original board
-  memcpy(boards_[0], original_board, sizeof(original_board));
-
-  if (legal_action_idxes_.size() != legal_action_idxes2.size()) {
-    std::cout << "legal action mismatch\n";
-  }
-  for (int x = 0; x < legal_action_idxes_.size(); ++x) {
-    if (legal_action_idxes_[x] != legal_action_idxes2[x]) {
-      std::cout << "legal action mismatch\n";
-    }
   }
 }
 
@@ -568,8 +444,7 @@ void GameState::uf_make_(int x, int y) {
   chain_lists_[x][y].emplace(std::make_pair(x, y));
 }
 
-std::pair<int, int> GameState::uf_find_(int x, int y, bool from_delete) {
-  assert(from_delete || boards_[0][x][y] != EMPTY);
+std::pair<int, int> GameState::uf_find_(int x, int y) {
   int parent_x = uf_chains_[x][y].first;
   int parent_y = uf_chains_[x][y].second;
   // path halving
@@ -605,7 +480,7 @@ void GameState::uf_union_(int x1, int y1, int x2, int y2) {
 }
 
 void GameState::uf_delete_(int x1, int y1) {
-  std::pair<int, int> head = uf_find_(x1, y1, true);
+  std::pair<int, int> head = uf_find_(x1, y1);
   for (const std::pair<int, int> &x : chain_lists_[head.first][head.second]) {
     uf_chains_[x.first][x.second] = {-1, -1};
   }
