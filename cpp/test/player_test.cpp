@@ -14,19 +14,31 @@
 #include "player/NNEvaluator.h"
 #include "play/Match.h"
 
-TEST(PlayerTest, PlayerGameTest) {
-  game::GameState state(7.5);
-  RandomPlayer black_player(game::Color::BLACK);
-  RandomPlayer white_player(game::Color::WHITE);
-  while (!state.done()) {
-    if (state.get_turn() == game::Color::BLACK) {
-      state.move(black_player.get_move(state));
-    } else {
-      state.move(white_player.get_move(state));
+TEST(PlayerTest, GameSpeedTest) {
+  constexpr size_t num_iters = 10;
+  constexpr size_t num_games = 1000;
+  double sum = 0.0;
+  for (size_t j = 0; j < num_iters; ++j) {
+    auto start = std::chrono::steady_clock::now();
+    for (size_t i = 0; i < num_games; ++i) {
+      game::GameState state(7.5);
+      RandomPlayer black_player(game::Color::BLACK);
+      RandomPlayer white_player(game::Color::WHITE);
+      while (!state.done()) {
+        if (state.get_turn() == game::Color::BLACK) {
+          state.move(black_player.get_move(state));
+        } else {
+          state.move(white_player.get_move(state));
+        }
+        // std::cout << state.to_string() << std::endl;
+      }
     }
-    std::cout << state.to_string() << std::endl;
+    auto end = std::chrono::steady_clock::now();
+    std::chrono::duration<double> diff = end - start;
+    sum += diff.count();
+    std::cout << "time taken: " << std::fixed << diff.count() << "s\n";
   }
-  std::cout << state.score() << std::endl;
+  std::cout << "avg: " << std::fixed << sum / (num_iters) << std::endl;
 }
 
 TEST(PlayerTest, DISABLED_NNTest) {
