@@ -109,7 +109,7 @@ public:
         // TODO: confirm that we evaluate predicate before locking for the first
         // time. otherwise there is a bug here
         using namespace std::chrono_literals;
-        cv_.wait_until(ul, now + 75ms, [this] { return done_processing_; });
+        cv_.wait_until(ul, now + 750ms, [this] { return done_processing_; });
         if (!done_processing_) {
           std::cout << "program will hang; feeding input\n";
           Tensor input_tensor = torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
@@ -169,6 +169,7 @@ NNEvaluator<threads>::NNEvaluator(const std::string &input_file)
     // *module_ = torch::jit::load(input_file);
     *module_ = torch::jit::load(input_file, torch::kCUDA);
     module_->eval();
+    at::globalContext().setBenchmarkCuDNN(false);
     std::cout << "model loaded successfully\n";
   } catch (const c10::Error &e) {
     std::cerr << "error loading the model\n";
