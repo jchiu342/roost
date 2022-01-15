@@ -59,14 +59,6 @@ private:
   // this is valid UNLESS done_ = true
   std::vector<int> legal_action_idxes_;
   std::shared_ptr<Zobrist> zobrist_;
-  bool is_legal_play_(int x, int y, Color c);
-  // returns true if some neighbors were removed
-  bool remove_dead_neighbors_(int x, int y, Color opposite_color,
-                              bool permanent = true);
-  void dfs_remove_chain_(int x, int y, Color c);
-  void dfs_liberties_(int x, int y, Color c, bool visited[][BOARD_SIZE],
-                      std::set<std::pair<int, int>> *chain,
-                      int *liberties) const;
   void dfs_score_(int x, int y, Color opposite_color,
                   bool reachable[][BOARD_SIZE]) const;
   void update_liberties_at_head_(int x, int y);
@@ -89,8 +81,8 @@ template <> struct std::hash<game::GameState> {
 template <> struct std::equal_to<game::GameState> {
   bool operator()(const game::GameState &lhs,
                   const game::GameState &rhs) const {
-    return lhs.hash() == rhs.hash() &&
-           *(lhs.get_legal_action_indexes()) == *(rhs.get_legal_action_indexes());
+    return lhs.hash() == rhs.hash() && *(lhs.get_legal_action_indexes()) ==
+                                           *(rhs.get_legal_action_indexes());
   }
 };
 

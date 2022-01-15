@@ -68,7 +68,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
   assert(0 <= best_action_idx &&
          best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1);
   std::erase_if(map_, [&state](const auto &item) {
-    auto const& [map_state, info] = item;
+    auto const &[map_state, info] = item;
     return map_state.get_num_turns() <= state.get_num_turns();
   });
   return {color_, best_action_idx};

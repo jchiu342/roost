@@ -16,7 +16,7 @@ using namespace game;
 namespace fs = std::filesystem;
 
 void generate_data(int num_threads, int games, int playouts,
-                   const std::string& model_file, const std::string &save_dir) {
+                   const std::string &model_file, const std::string &save_dir) {
   std::shared_ptr<Evaluator> eval =
       std::make_shared<NNEvaluator<32>>(model_file);
   std::shared_ptr<std::atomic<int>> win_counter =
@@ -46,9 +46,9 @@ void generate_data(int num_threads, int games, int playouts,
   fs::current_path(starting_path);
 }
 
-int test_strength(const std::string& black_model_file, const std::string& white_model_file,
-                  int num_threads, int games, int playouts,
-                  const std::string &save_dir) {
+int test_strength(const std::string &black_model_file,
+                  const std::string &white_model_file, int num_threads,
+                  int games, int playouts, const std::string &save_dir) {
   int black_wins = 0;
   std::mutex mtx;
   std::shared_ptr<Evaluator> b_eval =
