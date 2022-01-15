@@ -169,7 +169,7 @@ NNEvaluator<threads>::NNEvaluator(const std::string &input_file)
     // *module_ = torch::jit::load(input_file);
     *module_ = torch::jit::load(input_file, torch::kCUDA);
     module_->eval();
-    at::globalContext().setBenchmarkCuDNN(false);
+    // at::globalContext().setBenchmarkCuDNN(false);
     std::cout << "model loaded successfully\n";
   } catch (const c10::Error &e) {
     std::cerr << "error loading the model\n";
