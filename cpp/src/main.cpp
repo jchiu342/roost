@@ -1,4 +1,5 @@
 #include "game/GameState.h"
+#include "play/GTP.h"
 #include "play/Match.h"
 #include "player/Evaluator.h"
 #include "player/MCTSPlayer.h"
@@ -61,10 +62,10 @@ int test_strength(const std::string &black_model_file,
       std::make_shared<std::atomic<int>>(0);
   auto task = [b_eval, w_eval, num_threads, &black_wins, &mtx, win_counter,
                game_counter](int tid, int games, int playouts) {
-    std::shared_ptr<AbstractPlayer> black = std::make_shared<MCTSPlayer>(
-        b_eval, playouts, true);
-    std::shared_ptr<AbstractPlayer> white = std::make_shared<MCTSPlayer>(
-        w_eval, playouts, true);
+    std::shared_ptr<AbstractPlayer> black =
+        std::make_shared<MCTSPlayer>(b_eval, playouts, true);
+    std::shared_ptr<AbstractPlayer> white =
+        std::make_shared<MCTSPlayer>(w_eval, playouts, true);
     Match m(black, white, games, num_threads, tid, win_counter, game_counter);
     int b_wins = m.run();
     mtx.lock();
@@ -86,6 +87,17 @@ int test_strength(const std::string &black_model_file,
   return black_wins;
 }
 
+[[noreturn]] void gtp(const std::string &model_file, int playouts) {
+  std::shared_ptr<Evaluator> eval =
+      std::make_shared<NNEvaluator<1>>(model_file);
+  std::shared_ptr<AbstractPlayer> engine =
+      std::make_shared<MCTSPlayer>(eval, playouts, true);
+  while (true) {
+    GTP gtp_runner(engine);
+    gtp_runner.run();
+  }
+}
+
 int main(int argc, char *argv[]) {
   if (argc < 3) {
     std::cout << "Incorrect usage\n";
@@ -94,7 +106,8 @@ int main(int argc, char *argv[]) {
   std::string command = argv[1];
   if (command == "generate_data") {
     if (argc < 7) {
-      std::cout << "generate_data usage: ./roost <model_file> <num_games> "
+      std::cout << "generate_data usage: ./roost generate_data <model_file> "
+                   "<num_games> "
                    "<num_threads> <playouts> <save_directory>\n";
       return -1;
     }
@@ -106,7 +119,8 @@ int main(int argc, char *argv[]) {
     return 0;
   } else if (command == "test_strength") {
     if (argc < 7) {
-      std::cout << "test_strength usage: ./roost <model_1_file> <model_2_file> "
+      std::cout << "test_strength usage: ./roost test_strength <model_1_file> "
+                   "<model_2_file> "
                    "<num_games> <num_threads> <num_playouts>\n";
       return -1;
     }
@@ -123,7 +137,12 @@ int main(int argc, char *argv[]) {
                                                 "test_strength_white"))
               << std::endl;
     return 0;
+  } else if (command == "gtp") {
+    if (argc < 4) {
+      std::cout << "gtp usage: ./roost gtp <model_file> <playouts>\n";
+    }
+    int num_playouts = stoi(argv[3]);
+    gtp(argv[2], num_playouts);
   }
-  std::cout << "Incorrect usage\n";
   return -1;
 }

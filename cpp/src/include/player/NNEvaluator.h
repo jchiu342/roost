@@ -136,16 +136,16 @@ template <int threads>
 NNEvaluator<threads>::NNEvaluator(const std::string &input_file)
     : batch_size_(threads), global_counter_(0) {
   try {
-    std::cout << "loading model " + input_file + "\n";
+    std::cerr << "loading model " + input_file + "\n";
     module_ = std::make_shared<torch::jit::script::Module>();
     // *module_ = torch::jit::load(input_file);
     *module_ = torch::jit::load(input_file, torch::kCUDA);
     module_->eval();
     // at::globalContext().setBenchmarkCuDNN(false);
-    std::cout << "model " + input_file + " loaded successfully\n";
+    std::cerr << "model " + input_file + " loaded successfully\n";
   } catch (const c10::Error &e) {
     std::cerr << "error loading model " + input_file + "\n";
-    std::cout << e.what() << std::endl;
+    std::cerr << e.what() << std::endl;
     assert(false);
   }
 }

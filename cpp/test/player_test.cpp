@@ -13,8 +13,9 @@
 #include "player/MCTSPlayer.h"
 #include "player/NNEvaluator.h"
 #include "play/Match.h"
+#include "play/GTP.h"
 
-TEST(PlayerTest, GameSpeedTest) {
+TEST(PlayerTest, DISABLED_GameSpeedTest) {
   constexpr size_t num_iters = 10;
   constexpr size_t num_games = 1000;
   double sum = 0.0;
@@ -58,7 +59,7 @@ TEST(PlayerTest, DISABLED_NNTest) {
 }
 
 // test NNEvaluator correctness under multiple threads
-TEST(PlayerTest, MultiThreadNNTest) {
+TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
   constexpr size_t num_threads = 16;
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("net1.pt");
   std::vector<game::GameState> states;
@@ -96,7 +97,7 @@ TEST(PlayerTest, MultiThreadNNTest) {
 }
 
 // TODO: perhaps integrate Google Benchmark or some other tool for more accurate measurement
-TEST(PlayerTest, SpeedTest) {
+TEST(PlayerTest, DISABLED_SpeedTest) {
   double sum = 0.0;
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {
@@ -141,26 +142,9 @@ TEST(PlayerTest, SpeedTest) {
   std::cout << "avg: " << std::fixed << sum / (num_iters - 1) << std::endl;
 }
 
-TEST(PlayerTest, TorchBlobTest) {
-  float x[16][5][9][9];
-  for (int a = 0; a < 16; ++a) {
-    for (int b = 0; b < 5; ++b) {
-      for (int c = 0; c < 9; ++c) {
-        for (int d = 0; d < 9; ++d) {
-          x[a][b][c][d] = a * 5 * 9 * 9 + b * 9 * 9 + c * 9 + d;
-        }
-      }
-    }
-  }
-  torch::Tensor t = torch::from_blob(x, {16, 5, 9, 9}, TensorOptions().dtype(kFloat));
-  for (int a = 0; a < 16; ++a) {
-    for (int b = 0; b < 5; ++b) {
-      for (int c = 0; c < 9; ++c) {
-        for (int d = 0; d < 9; ++d) {
-          std::cout << a << ' ' << b << ' ' << c << ' ' << d << ' ' << x[a][b][c][d] << ' ' << t[a][b][c][d].item<float>() << std::endl;
-          EXPECT_EQ(x[a][b][c][d], t[a][b][c][d].item<float>());
-        }
-      }
-    }
-  }
+TEST(PlayerTest, GTPTest) {
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<1>>("net1.pt");
+  std::shared_ptr<AbstractPlayer> engine = std::make_shared<MCTSPlayer>(eval, 100, true);
+  GTP gtp_runner(engine);
+  gtp_runner.run();
 }

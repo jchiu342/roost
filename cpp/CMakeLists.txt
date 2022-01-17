@@ -15,7 +15,7 @@ include_directories(src/include)
 
 # add_subdirectory(src)
 # file(GLOB SOURCES "src/*.cpp")
-set(SOURCES src/main.cpp
+set(SOURCES
         src/game/Action.cpp
         src/game/GameState.cpp
         src/play/Match.cpp
@@ -23,7 +23,8 @@ set(SOURCES src/main.cpp
         src/player/MCTSPlayer.cpp
         src/utils/Zobrist.cpp
         src/play/GTP.cpp)
-add_executable(roost ${SOURCES})
+add_executable(roost ${SOURCES}
+        src/main.cpp)
 target_link_libraries(roost "${TORCH_LIBRARIES}")
 # add_executable(roost src/main.cpp src/game/Action.cpp src/game/Action.h src/game/Game.cpp src/game/Game.h src/game/game_defs.h)
 
@@ -67,13 +68,7 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_executable(
-        unit_tests
-        src/game/Action.cpp
-        src/game/GameState.cpp
-        src/play/Match.cpp
-        src/player/RandomPlayer.cpp
-        src/player/MCTSPlayer.cpp
-        src/utils/Zobrist.cpp
+        unit_tests ${SOURCES}
         test/game_test.cpp
         test/player_test.cpp)
 target_link_libraries(

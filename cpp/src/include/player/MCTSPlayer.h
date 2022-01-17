@@ -23,9 +23,9 @@ class MCTSPlayer : public AbstractPlayer {
   };
 
 public:
-  MCTSPlayer(std::shared_ptr<Evaluator> evaluator,
-             int playouts = 250, bool eval_mode = false, bool use_pcr = false,
-             int pcr_small = 0, int pcr_big = 0);
+  MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts = 250,
+             bool eval_mode = false, bool use_pcr = false, int pcr_small = 0,
+             int pcr_big = 0);
   game::Action get_move(game::GameState state) override;
   void reset() override;
 

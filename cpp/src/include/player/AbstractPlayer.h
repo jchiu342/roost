@@ -13,7 +13,6 @@ public:
   explicit AbstractPlayer() {}
   virtual game::Action get_move(game::GameState state) = 0;
   virtual void reset() {}
-
 };
 
 #endif // ROOST_ABSTRACTPLAYER_H

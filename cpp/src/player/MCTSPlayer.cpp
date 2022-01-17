@@ -9,9 +9,8 @@
 #include <iostream>
 #include <numeric>
 
-MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator,
-                       int playouts, bool eval_mode, bool use_pcr,
-                       int pcr_small, int pcr_big)
+MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
+                       bool eval_mode, bool use_pcr, int pcr_small, int pcr_big)
     : AbstractPlayer(), evaluator_(std::move(evaluator)), gen_(rd_()),
       playouts_(playouts), eval_mode_(eval_mode), use_pcr_(use_pcr),
       pcr_small_(pcr_small), pcr_big_(pcr_big) {}
