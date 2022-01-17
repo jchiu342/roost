@@ -22,7 +22,7 @@ set(SOURCES src/main.cpp
         src/player/RandomPlayer.cpp
         src/player/MCTSPlayer.cpp
         src/player/NNEvaluator.cpp
-        src/utils/Zobrist.cpp)
+        src/utils/Zobrist.cpp src/play/GTP.cpp src/include/play/GTP.h)
 add_executable(roost ${SOURCES})
 target_link_libraries(roost "${TORCH_LIBRARIES}")
 # add_executable(roost src/main.cpp src/game/Action.cpp src/game/Action.h src/game/Game.cpp src/game/Game.h src/game/game_defs.h)
