@@ -26,9 +26,9 @@ void generate_data(int num_threads, int games, int playouts,
   auto task = [&, eval, num_threads, playouts, win_counter,
                game_counter](int tid, int games) {
     std::shared_ptr<AbstractPlayer> black =
-        std::make_shared<MCTSPlayer>(game::Color::BLACK, eval, playouts);
+        std::make_shared<MCTSPlayer>(eval, playouts);
     std::shared_ptr<AbstractPlayer> white =
-        std::make_shared<MCTSPlayer>(game::Color::WHITE, eval, playouts);
+        std::make_shared<MCTSPlayer>(eval, playouts);
     Match m(black, white, games, num_threads, tid, win_counter, game_counter);
     m.run();
   };
@@ -62,9 +62,9 @@ int test_strength(const std::string& black_model_file, const std::string& white_
   auto task = [b_eval, w_eval, num_threads, &black_wins, &mtx, win_counter,
                game_counter](int tid, int games, int playouts) {
     std::shared_ptr<AbstractPlayer> black = std::make_shared<MCTSPlayer>(
-        game::Color::BLACK, b_eval, playouts, true);
+        b_eval, playouts, true);
     std::shared_ptr<AbstractPlayer> white = std::make_shared<MCTSPlayer>(
-        game::Color::WHITE, w_eval, playouts, true);
+        w_eval, playouts, true);
     Match m(black, white, games, num_threads, tid, win_counter, game_counter);
     int b_wins = m.run();
     mtx.lock();

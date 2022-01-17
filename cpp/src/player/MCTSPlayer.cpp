@@ -9,15 +9,15 @@
 #include <iostream>
 #include <numeric>
 
-MCTSPlayer::MCTSPlayer(game::Color c, std::shared_ptr<Evaluator> evaluator,
+MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator,
                        int playouts, bool eval_mode, bool use_pcr,
                        int pcr_small, int pcr_big)
-    : AbstractPlayer(c), evaluator_(std::move(evaluator)), gen_(rd_()),
+    : AbstractPlayer(), evaluator_(std::move(evaluator)), gen_(rd_()),
       playouts_(playouts), eval_mode_(eval_mode), use_pcr_(use_pcr),
       pcr_small_(pcr_small), pcr_big_(pcr_big) {}
 
 game::Action MCTSPlayer::get_move(game::GameState state) {
-  assert(state.get_turn() == color_);
+  // assert(state.get_turn() == color_);
   visit(state);
   if (!eval_mode_ && use_pcr_) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
@@ -53,7 +53,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
       counter += map_[state].N[legal_idx];
       if (counter >= vis_num) {
         assert(0 <= legal_idx && legal_idx <= BOARD_SIZE * BOARD_SIZE + 1);
-        return {color_, legal_idx};
+        return {state.get_turn(), legal_idx};
       }
     }
   }
@@ -71,7 +71,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
     auto const& [map_state, info] = item;
     return map_state.get_num_turns() <= state.get_num_turns();
   });
-  return {color_, best_action_idx};
+  return {state.get_turn(), best_action_idx};
 }
 
 void MCTSPlayer::reset() { map_.clear(); }

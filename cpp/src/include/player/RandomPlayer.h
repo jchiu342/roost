@@ -10,7 +10,7 @@
 
 class RandomPlayer : public AbstractPlayer {
 public:
-  explicit RandomPlayer(game::Color c);
+  RandomPlayer();
   game::Action get_move(game::GameState state) override;
 
 private:

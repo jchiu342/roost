@@ -10,12 +10,10 @@
 
 class AbstractPlayer {
 public:
-  explicit AbstractPlayer(game::Color color) : color_(color) {}
+  explicit AbstractPlayer() {}
   virtual game::Action get_move(game::GameState state) = 0;
   virtual void reset() {}
 
-protected:
-  game::Color color_;
 };
 
 #endif // ROOST_ABSTRACTPLAYER_H

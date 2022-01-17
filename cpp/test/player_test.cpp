@@ -22,8 +22,8 @@ TEST(PlayerTest, GameSpeedTest) {
     auto start = std::chrono::steady_clock::now();
     for (size_t i = 0; i < num_games; ++i) {
       game::GameState state(7.5);
-      RandomPlayer black_player(game::Color::BLACK);
-      RandomPlayer white_player(game::Color::WHITE);
+      RandomPlayer black_player;
+      RandomPlayer white_player;
       while (!state.done()) {
         if (state.get_turn() == game::Color::BLACK) {
           state.move(black_player.get_move(state));
@@ -44,8 +44,8 @@ TEST(PlayerTest, GameSpeedTest) {
 TEST(PlayerTest, DISABLED_NNTest) {
   game::GameState state(7.5);
   std::unique_ptr<Evaluator> eval = std::make_unique<NNEvaluator<1>>("traced_model.pt");
-  MCTSPlayer black_player(game::Color::BLACK, std::move(eval));
-  RandomPlayer white_player(game::Color::WHITE);
+  MCTSPlayer black_player(std::move(eval));
+  RandomPlayer white_player;
   while (!state.done()) {
     if (state.get_turn() == game::Color::BLACK) {
       state.move(black_player.get_move(state));
@@ -58,15 +58,15 @@ TEST(PlayerTest, DISABLED_NNTest) {
 }
 
 // test NNEvaluator correctness under multiple threads
-TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
+TEST(PlayerTest, MultiThreadNNTest) {
   constexpr size_t num_threads = 16;
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("net1.pt");
   std::vector<game::GameState> states;
   std::vector<float> evals;
   states.reserve(num_threads);
   evals.reserve(num_threads);
-  RandomPlayer black_player(game::Color::BLACK);
-  RandomPlayer white_player(game::Color::WHITE);
+  RandomPlayer black_player;
+  RandomPlayer white_player;
   for (size_t i = 0; i < num_threads; ++i) {
     states.emplace_back(7.5);
     states[i].move(black_player.get_move(states[i]));
@@ -96,7 +96,7 @@ TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
 }
 
 // TODO: perhaps integrate Google Benchmark or some other tool for more accurate measurement
-TEST(PlayerTest, DISABLED_SpeedTest) {
+TEST(PlayerTest, SpeedTest) {
   double sum = 0.0;
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {
@@ -104,8 +104,8 @@ TEST(PlayerTest, DISABLED_SpeedTest) {
     std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<4>>("net1.pt");
     std::vector<game::GameState> states;
     states.reserve(num_threads);
-    RandomPlayer black_player(game::Color::BLACK);
-    RandomPlayer white_player(game::Color::WHITE);
+    RandomPlayer black_player;
+    RandomPlayer white_player;
     for (size_t i = 0; i < num_threads; ++i) {
       states.emplace_back(7.5);
       states[i].move(black_player.get_move(states[i]));
