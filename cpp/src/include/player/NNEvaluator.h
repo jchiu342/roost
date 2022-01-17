@@ -1,5 +1,6 @@
 //
 // Created by Jeremy on 12/15/2021.
+// TODO: refactor this so it's no longer in 1 file
 //
 
 #ifndef ROOST_NNEVALUATOR_H
@@ -17,24 +18,15 @@
 #include <utility>
 #include <vector>
 
-#define NUM_BLOCKS 5
-#define NUM_FILTERS 64
-
 using namespace torch;
-template<int threads>
-class NNEvaluator : public Evaluator {
+template <int threads> class NNEvaluator : public Evaluator {
 public:
-  // template<int threads>
   class Batch {
   public:
     Batch(std::shared_ptr<torch::jit::script::Module> module)
         : module_(std::move(module)), loaded_threads_(0), threads_(threads),
           done_processing_(false) {
       memset(input_, 0, sizeof(input_));
-      // input_tensor_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE});
-
-      // input_ = new int[threads][5][BOARD_SIZE][BOARD_SIZE];
-      // input_ = torch::zeros({threads, 5, BOARD_SIZE, BOARD_SIZE}).set_requires_grad(false);
     }
     // it is the caller's responsibility to ensure no duplicate slots
     Evaluation Evaluate(const game::GameState &state, int slot) {
@@ -44,54 +36,35 @@ public:
         for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
           if (*(index_0 + i) == game::BLACK) {
             input_[slot][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-            // input_tensor_[slot][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           } else if (*(index_0 + i) == game::WHITE) {
             input_[slot][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-            // input_tensor_[slot][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           }
           if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::BLACK) {
             input_[slot][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-            // input_tensor_[slot][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           } else if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::WHITE) {
             input_[slot][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-            // input_tensor_[slot][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           }
           input_[slot][4][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-          // input_tensor_[slot][4][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
         }
       } else {
         for (int i = 0; i < BOARD_SIZE * BOARD_SIZE; ++i) {
           if (*(index_0 + i) == game::BLACK) {
             input_[slot][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-            // input_tensor_[slot][1][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           } else if (*(index_0 + i) == game::WHITE) {
             input_[slot][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-            // input_tensor_[slot][0][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           }
           if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::BLACK) {
             input_[slot][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-            // input_tensor_[slot][3][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           } else if (*(index_0 + i + BOARD_SIZE * BOARD_SIZE) == game::WHITE) {
             input_[slot][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
-            // input_tensor_[slot][2][i / BOARD_SIZE][i % BOARD_SIZE] = 1;
           }
         }
       }
       // if we are the last thread to finish, we do the evaluation
       if (loaded_threads_.fetch_add(1) == threads_ - 1) {
-        Tensor input_tensor = torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE}, TensorOptions().dtype(kFloat));
-        /* for (auto x0 = 0; x0 < threads_; ++x0) {
-          for (auto x1 = 0; x1 < 5; ++x1) {
-            for (auto x2 = 0; x2 < BOARD_SIZE; ++x2) {
-              for (auto x3 = 0; x3 < BOARD_SIZE; ++x3) {
-                if (input_tensor[x0][x1][x2][x3].item<float>() != input_tensor_[x0][x1][x2][x3].item<float>()) {
-                  std::cout << "mismatch at " << x0 << ' ' << x1 << ' ' << x2 << ' ' << x3 << ' ' << std::endl;
-                  std::cout << "tensor value: " << input_tensor[x0][x1][x2][x3].item<long>() << "; tensor_ value: " << input_tensor_[x0][x1][x2][x3].item<long>();
-                }
-              }
-            }
-          }
-        }*/
+        Tensor input_tensor =
+            torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE},
+                             TensorOptions().dtype(kFloat));
         std::vector<torch::jit::IValue> inputs;
         inputs.emplace_back(input_tensor.to(at::kCUDA));
         // inputs.emplace_back(input_tensor);
@@ -112,7 +85,8 @@ public:
         cv_.wait_until(ul, now + 750ms, [this] { return done_processing_; });
         if (!done_processing_) {
           std::cout << "program will hang; feeding input\n";
-          Tensor input_tensor = torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
+          Tensor input_tensor =
+              torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
           std::vector<torch::jit::IValue> inputs;
           inputs.emplace_back(input_tensor.to(at::kCUDA));
           // inputs.emplace_back(input_tensor);
@@ -135,7 +109,6 @@ public:
 
     std::shared_ptr<torch::jit::script::Module> module_;
     float input_[threads][5][BOARD_SIZE][BOARD_SIZE];
-    // Tensor input_tensor_;
     Tensor policy_output_;
     Tensor value_output_;
     std::atomic<int> loaded_threads_;
@@ -152,35 +125,35 @@ private:
   std::shared_ptr<torch::jit::script::Module> module_;
   int batch_size_;
   int global_counter_;
-  // TODO: find better data structures for these tasks; unordered_map overhead
-  // is high
+  // TODO: test better data structures; unordered_map overhead may be high
   std::unordered_map<int, int> counters_;
   std::unordered_map<int, std::shared_ptr<Batch>> batch_map_;
   // protects maps and global counter
   std::mutex mtx_;
 };
 
-template<int threads>
+template <int threads>
 NNEvaluator<threads>::NNEvaluator(const std::string &input_file)
     : batch_size_(threads), global_counter_(0) {
   try {
-    std::cout << "loading model\n";
+    std::cout << "loading model " + input_file + "\n";
     module_ = std::make_shared<torch::jit::script::Module>();
     // *module_ = torch::jit::load(input_file);
     *module_ = torch::jit::load(input_file, torch::kCUDA);
     module_->eval();
     // at::globalContext().setBenchmarkCuDNN(false);
-    std::cout << "model loaded successfully\n";
+    std::cout << "model " + input_file + " loaded successfully\n";
   } catch (const c10::Error &e) {
-    std::cerr << "error loading the model\n";
+    std::cerr << "error loading model " + input_file + "\n";
     std::cout << e.what() << std::endl;
     assert(false);
   }
 }
 
 // TODO: refactor this so it doesn't break abstraction for gamestate
-template<int threads>
-Evaluator::Evaluation NNEvaluator<threads>::Evaluate(const game::GameState &state) {
+template <int threads>
+Evaluator::Evaluation
+NNEvaluator<threads>::Evaluate(const game::GameState &state) {
   if (state.done()) {
     return {{}, (state.winner() == game::BLACK ? 1.0f : -1.0f)};
   }

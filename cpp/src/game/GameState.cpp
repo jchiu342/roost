@@ -25,8 +25,8 @@ GameState::GameState(float komi, const std::shared_ptr<Zobrist> &zobrist)
   for (int i = 0; i < BOARD_SIZE * BOARD_SIZE + 1; ++i) {
     legal_action_idxes_.push_back(i);
   }
-  for (auto & uf_chain : uf_chains_) {
-    for (auto & y : uf_chain) {
+  for (auto &uf_chain : uf_chains_) {
+    for (auto &y : uf_chain) {
       y = std::make_pair(-1, -1);
     }
   }
@@ -145,24 +145,30 @@ void GameState::move(Action action) {
     std::set<std::pair<int, int>> neighbor_set;
     for (const auto a : neighbors) {
       if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
-        a[1] + y < BOARD_SIZE) {
+          a[1] + y < BOARD_SIZE) {
         if (boards_[0][a[0] + x][a[1] + y] == action.get_color()) {
           uf_union_(x, y, a[0] + x, a[1] + y);
-        } else if (boards_[0][a[0] + x][a[1] + y] == opposite(action.get_color())) {
+        } else if (boards_[0][a[0] + x][a[1] + y] ==
+                   opposite(action.get_color())) {
           std::pair<int, int> head = uf_find_(a[0] + x, a[1] + y);
-          if (!neighbor_set.contains(head) && --(liberties_[head.first][head.second]) == 0) {
+          if (!neighbor_set.contains(head) &&
+              --(liberties_[head.first][head.second]) == 0) {
             // remove dead neighbors
-            for (const std::pair<int, int> &stone: chain_lists_[head.first][head.second]) {
+            for (const std::pair<int, int> &stone :
+                 chain_lists_[head.first][head.second]) {
               hash_ ^= zobrist_->get_value(
-                      (boards_[0][stone.first][stone.second] == BLACK ? 0 : BOARD_SIZE * BOARD_SIZE) +
-                      (x * BOARD_SIZE + y));
+                  (boards_[0][stone.first][stone.second] == BLACK
+                       ? 0
+                       : BOARD_SIZE * BOARD_SIZE) +
+                  (x * BOARD_SIZE + y));
               boards_[0][stone.first][stone.second] = EMPTY;
             }
             capture = true;
             uf_delete_(head.first, head.second);
             // liberties are already at 0, no need to update them
           }
-          // if neighbors are part of same group, we don't want to subtract more than 1 liberty
+          // if neighbors are part of same group, we don't want to subtract more
+          // than 1 liberty
           neighbor_set.insert(head);
         }
       }
@@ -171,7 +177,8 @@ void GameState::move(Action action) {
     if (capture) {
       for (int x0 = 0; x0 < BOARD_SIZE; ++x0) {
         for (int y0 = 0; y0 < BOARD_SIZE; ++y0) {
-          if (boards_[0][x0][y0] == action.get_color() && !chain_lists_[x0][y0].empty()) {
+          if (boards_[0][x0][y0] == action.get_color() &&
+              !chain_lists_[x0][y0].empty()) {
             update_liberties_at_head_(x0, y0);
           }
         }
@@ -212,11 +219,10 @@ void GameState::move(Action action) {
       std::set<std::pair<int, int>> chain_heads;
       for (const auto a : neighbors) {
         if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
-        a[1] + y < BOARD_SIZE) {
+            a[1] + y < BOARD_SIZE) {
           if (boards_[0][a[0] + x][a[1] + y] == turn_) {
             chain_heads.insert(uf_find_(a[0] + x, a[1] + y));
-          }
-          else if (boards_[0][a[0] + x][a[1] + y] == EMPTY) {
+          } else if (boards_[0][a[0] + x][a[1] + y] == EMPTY) {
             ext_lib = true;
           }
         }
@@ -241,14 +247,15 @@ void GameState::move(Action action) {
             capture = true;
             dirty_board = true;
             // only temporarily removing from the board
-            for (const std::pair<int, int> &stone : chain_lists_[head.first][head.second]) {
+            for (const std::pair<int, int> &stone :
+                 chain_lists_[head.first][head.second]) {
               boards_[0][stone.first][stone.second] = EMPTY;
             }
           }
         }
       }
       if (capture) {
-        // we need to actually place the stone
+        // place the actual stone
         boards_[0][x][y] = turn_;
         bool kill = false;
         for (int i = 1; i < GAME_HISTORY_LEN; i += 2) {
@@ -315,97 +322,6 @@ std::string GameState::to_string() const {
   return str;
 }
 
-bool GameState::is_legal_play_(int x, int y, Color c) {
-  assert(0 <= x && x < BOARD_SIZE && 0 <= y && y < BOARD_SIZE);
-  if (boards_[0][x][y] != EMPTY)
-    return false;
-  Color original_board[BOARD_SIZE][BOARD_SIZE];
-  memcpy(original_board, boards_[0], sizeof(original_board));
-  boards_[0][x][y] = c;
-  remove_dead_neighbors_(x, y, opposite(c), false);
-  bool visited[BOARD_SIZE][BOARD_SIZE];
-  memset(visited, false, sizeof(visited));
-  std::set<std::pair<int, int>> chain;
-  int liberties = 0;
-  dfs_liberties_(x, y, c, visited, &chain, &liberties);
-  // remove chain size requirement for normal go.
-  if (liberties == 0 || chain.size() == 4) {
-    memcpy(boards_[0], original_board, sizeof(original_board));
-    return false;
-  }
-  // check if new state identical to previous game states (ko rules)
-  for (int i = 1; i < GAME_HISTORY_LEN; i += 2) {
-    if (memcmp(boards_[0], boards_[i], sizeof(original_board)) == 0) {
-      memcpy(boards_[0], original_board, sizeof(original_board));
-      return false;
-    }
-  }
-  memcpy(boards_[0], original_board, sizeof(original_board));
-  return true;
-}
-
-bool GameState::remove_dead_neighbors_(int x, int y, Color opposite_color,
-                                       bool permanent) {
-  bool return_value = false;
-  for (const auto a : neighbors) {
-    if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
-        a[1] + y < BOARD_SIZE) {
-      int liberties = 0;
-      bool visited[BOARD_SIZE][BOARD_SIZE];
-      memset(visited, false, sizeof(visited));
-      std::set<std::pair<int, int>> chain;
-      dfs_liberties_(a[0] + x, a[1] + y, opposite_color, visited, &chain,
-                     &liberties);
-      if (liberties == 0 && !chain.empty()) {
-        return_value = true;
-        for (const std::pair<int, int> &coord : chain) {
-          if (permanent) {
-            hash_ ^= zobrist_->get_value(
-                (boards_[0][coord.first][coord.second] == BLACK
-                     ? 0
-                     : BOARD_SIZE * BOARD_SIZE) +
-                coord.first * BOARD_SIZE + coord.second);
-          }
-          boards_[0][coord.first][coord.second] = EMPTY;
-        }
-      }
-    }
-  }
-  return return_value;
-}
-
-void GameState::dfs_remove_chain_(int x, int y, Color c) {
-  boards_[0][x][y] = EMPTY;
-  for (const auto a : neighbors) {
-    if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
-        a[1] + y < BOARD_SIZE && boards_[0][a[0] + x][a[1] + y] == c) {
-      dfs_remove_chain_(a[0] + x, a[1] + y, c);
-    }
-  }
-}
-
-void GameState::dfs_liberties_(int x, int y, Color c,
-                               bool visited[][BOARD_SIZE],
-                               std::set<std::pair<int, int>> *chain,
-                               int *liberties) const {
-  if (visited[x][y])
-    return;
-  visited[x][y] = true;
-  if (boards_[0][x][y] == EMPTY) {
-    *liberties = *liberties + 1;
-    return;
-  }
-  if (boards_[0][x][y] == c) {
-    chain->insert({x, y});
-    for (const auto a : neighbors) {
-      if (0 <= a[0] + x && a[0] + x < BOARD_SIZE && 0 <= a[1] + y &&
-          a[1] + y < BOARD_SIZE) {
-        dfs_liberties_(a[0] + x, a[1] + y, c, visited, chain, liberties);
-      }
-    }
-  }
-}
-
 void GameState::dfs_score_(int x, int y, Color opposite_color,
                            bool reachable[][BOARD_SIZE]) const {
   if (reachable[x][y]) {
@@ -437,7 +353,6 @@ void GameState::update_liberties_at_head_(int x, int y) {
   liberties_[x][y] = static_cast<int>(lib_set.size());
 }
 
-
 void GameState::uf_make_(int x, int y) {
   uf_chains_[x][y].first = x;
   uf_chains_[x][y].second = y;
@@ -466,14 +381,19 @@ void GameState::uf_union_(int x1, int y1, int x2, int y2) {
     return;
   }
   // larger chain retains its head
-  if (chain_lists_[head_1.first][head_1.second].size() >= chain_lists_[head_2.first][head_2.second].size()) {
+  if (chain_lists_[head_1.first][head_1.second].size() >=
+      chain_lists_[head_2.first][head_2.second].size()) {
     uf_chains_[head_2.first][head_2.second] = head_1;
-    chain_lists_[head_1.first][head_1.second].insert(chain_lists_[head_2.first][head_2.second].begin(), chain_lists_[head_2.first][head_2.second].end());
+    chain_lists_[head_1.first][head_1.second].insert(
+        chain_lists_[head_2.first][head_2.second].begin(),
+        chain_lists_[head_2.first][head_2.second].end());
     chain_lists_[head_2.first][head_2.second].clear();
     liberties_[head_2.first][head_2.second] = 0;
   } else {
     uf_chains_[head_1.first][head_1.second] = head_2;
-    chain_lists_[head_2.first][head_2.second].insert(chain_lists_[head_1.first][head_1.second].begin(), chain_lists_[head_1.first][head_1.second].end());
+    chain_lists_[head_2.first][head_2.second].insert(
+        chain_lists_[head_1.first][head_1.second].begin(),
+        chain_lists_[head_1.first][head_1.second].end());
     chain_lists_[head_1.first][head_1.second].clear();
     liberties_[head_1.first][head_1.second] = 0;
   }

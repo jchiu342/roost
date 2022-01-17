@@ -16,8 +16,10 @@ namespace game {
 constexpr int neighbors[4][2] = {{-1, 0}, {1, 0}, {0, 1}, {0, -1}};
 enum Color { EMPTY = 0, BLACK = 1, WHITE = -1 };
 inline Color opposite(const Color &c) {
-  if (c == BLACK) return WHITE;
-  if (c == WHITE) return BLACK;
+  if (c == BLACK)
+    return WHITE;
+  if (c == WHITE)
+    return BLACK;
   throw std::invalid_argument("opposite called on empty color");
 }
 

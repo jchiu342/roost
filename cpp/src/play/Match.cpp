@@ -4,13 +4,10 @@
 
 #include "play/Match.h"
 #include "game/GameState.h"
-// #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <string>
-
-// namespace fs = std::filesystem;
 
 Match::Match(std::shared_ptr<AbstractPlayer> black,
              std::shared_ptr<AbstractPlayer> white, int num_games,
