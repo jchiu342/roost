@@ -18,6 +18,7 @@ void GTP::run() {
     while (!done) {
       std::cerr << s.to_string() << "\n";
       getline(std::cin, input_str);
+      std::cerr << "received: " << input_str << std::endl;
       std::transform(input_str.begin(), input_str.end(), input_str.begin(),
                      ::tolower);
       if (input_str == "genmove b") {
@@ -25,18 +26,25 @@ void GTP::run() {
           throw std::logic_error("invalid genmove turn");
         }
         game::Action a = engine_->get_move(s);
-        std::cout << a.to_gtp_string() << "\n";
+        std::cout << a.to_gtp_string() << "\n" << std::endl;
         s.move(a);
       } else if (input_str == "genmove w") {
         if (s.get_turn() != game::WHITE) {
           throw std::logic_error("invalid genmove turn");
         }
         game::Action a = engine_->get_move(s);
-        std::cout << a.to_gtp_string() << "\n";
+        std::cout << a.to_gtp_string() << "\n" << std::endl;
         s.move(a);
       } else if (input_str.substr(0, 4) == "play") {
         s.move(game::Action::from_action(input_str));
-        std::cout << "=\n";
+        std::cout << "=\n" << std::endl;
+      } else if (input_str == "list_commands"){
+        std::cout << "= genmove\nkomi\nplay\n" << std::endl;
+      } else if (input_str == "quit") {
+        done = true;
+        std::cout << "=\n" << std::endl;
+      } else {
+          std::cout << "=\n" << std::endl;
       }
       if (s.done()) {
         done = true;
