@@ -13,9 +13,8 @@ import os
 
 # TODO: make this less hacky
 # ONLY WORKS FOR BOARD_SIZE <= 9
-def read_from_sgf(game_dir, save_train_file, save_val_file, train_split=0.8):
-    train = open(save_train_file, "ab+")
-    val = open(save_val_file, "ab+")
+def read_from_sgf(game_dir, save_file, train_split=0.8):
+    fout = open(save_file, "ab+")
     for root, dirs, files in os.walk(game_dir, topdown=False):
         for name in tqdm(files):
             with open(os.path.join(root, name), 'r') as file_object:
@@ -42,14 +41,10 @@ def read_from_sgf(game_dir, save_train_file, save_val_file, train_split=0.8):
                             winner = WHITE if line.find("RE[W") != -1 else BLACK
                     except EOFError:
                         break
-                if random.random() < train_split:
-                    np.save(train, states)
-                    np.save(train, actions)
-                    np.save(train, winner)
-                else:
-                    np.save(val, states)
-                    np.save(val, actions)
-                    np.save(val, winner)
+                np.save(fout, states)
+                np.save(fout, actions)
+                np.save(fout, winner)
+    fout.close()
 
 
 

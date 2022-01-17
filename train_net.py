@@ -13,6 +13,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 EPOCH = 75
 BATCH_SIZE = 256
+TRAIN_TEST_SPLIT = 0.9
 SAMPLES_PER_EPOCH = 1000
 
 
@@ -80,14 +81,18 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
         LOGGER.add_scalar("Train loss", avg_loss, i)
 
 
-def start_train(train_dir, val_dir, save_name):
+def start_train(data_dir, save_name):
+    dataset = GameDataset(data_dir)
+    train_set_size = int(len(dataset) * TRAIN_TEST_SPLIT)
+    val_set_size = len(dataset) - train_set_size
+    trainset, valset = torch.utils.data.random_split(dataset, [train_set_size, val_set_size])
     trainset = torch.utils.data.DataLoader(
-        GameDataset(train_dir),
+        trainset,
         shuffle=True,
         batch_size=BATCH_SIZE
     )
     valset = torch.utils.data.DataLoader(
-        GameDataset(val_dir),
+        valset,
         shuffle=True,
         batch_size=BATCH_SIZE
     )
