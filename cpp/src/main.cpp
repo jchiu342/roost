@@ -87,15 +87,13 @@ int test_strength(const std::string &black_model_file,
   return black_wins;
 }
 
-[[noreturn]] void gtp(const std::string &model_file, int playouts) {
+void gtp(const std::string &model_file, int playouts) {
   std::shared_ptr<Evaluator> eval =
       std::make_shared<NNEvaluator<1>>(model_file);
   std::shared_ptr<AbstractPlayer> engine =
       std::make_shared<MCTSPlayer>(eval, playouts, true);
-  while (true) {
-    GTP gtp_runner(engine);
-    gtp_runner.run();
-  }
+  GTP gtp_runner(engine);
+  gtp_runner.run();
 }
 
 int main(int argc, char *argv[]) {

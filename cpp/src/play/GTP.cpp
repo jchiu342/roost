@@ -38,10 +38,15 @@ void GTP::run() {
       } else if (input_str.substr(0, 4) == "play") {
         s.move(game::Action::from_action(input_str));
         std::cout << "=\n" << std::endl;
+      } else if (input_str == "final_score") {
+        std::cout << ((s.score() > 0) ? "= B+0.5\n" : "= W+0.5\n") << std::endl;
       } else if (input_str == "list_commands"){
-        std::cout << "= genmove\nkomi\nplay\n" << std::endl;
+          std::cout << "= genmove\nkomi\nplay\nclear_board\n" << std::endl;
       } else if (input_str == "quit") {
         done = true;
+        std::cout << "=\n" << std::endl;
+      } else if (input_str == "clear_board") {
+        s = game::GameState(7.5);
         std::cout << "=\n" << std::endl;
       } else {
           std::cout << "=\n" << std::endl;
