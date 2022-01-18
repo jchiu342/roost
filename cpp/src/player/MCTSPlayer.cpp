@@ -33,9 +33,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
       }
     }
   } else {
-    if (!eval_mode_) {
-      apply_dirichlet_noise_(state);
-    }
+    apply_dirichlet_noise_(state);
     for (int i = 1; i < playouts_; ++i) {
       visit(state);
     }
@@ -145,6 +143,7 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
     assert(!std::isnan(values[i]));
   }
   // apply dirichlet to each P(s, a)
+  const float DIRICHLET_EPSILON = (eval_mode_) ? DIRICHLET_EPSILON_VAL : DIRICHLET_EPSILON_TRAIN;
   for (size_t i = 0; i < num_values; ++i) {
     assert(!std::isnan(map_[state].P[legal_actions[i]]));
     map_[state].P[legal_actions[i]] =
