@@ -7,7 +7,7 @@
 
 #define DIRICHLET_ALPHA 0.15
 #define DIRICHLET_EPSILON 0.25
-#define MCTS_CPUCT 1.5
+#define MCTS_CPUCT 1.1
 #define PCR_P 0.25
 #define TEMP_0_MOVE_NUM_TRAIN 20
 #define TEMP_0_MOVE_NUM_VAL 10
