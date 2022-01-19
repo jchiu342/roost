@@ -6,6 +6,7 @@ import torch
 import torchvision
 from torch.utils.tensorboard import SummaryWriter
 import os
+from random import random
 from os.path import exists
 
 
@@ -14,32 +15,44 @@ LOGGER = SummaryWriter("runs/testrun")
 EPOCH = 75
 BATCH_SIZE = 256
 TRAIN_TEST_SPLIT = 0.9
+SAMPLE_INCLUDE_PROB = 0.5
 SAMPLES_PER_EPOCH = 1000
 
 
 class GameDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset_dir):
-        self.examples = []
-        for root, dirs, files in os.walk(dataset_dir, topdown=False):
-            for name in tqdm(files):
-                with open(os.path.join(root, name), 'rb') as fin:
-                    while True:
-                        try:
-                            s = torch.from_numpy(np.load(fin))
-                            a = torch.from_numpy(np.load(fin)).type(torch.long)
-                            w = torch.from_numpy(np.load(fin)).type(torch.float32)
-                            assert(len(s) == len(a))
-                            for i in range(len(s)):
-                                self.examples.append((s[i], a[i], w))
-                        except ValueError:
-                            break
-        print("Loaded " + dataset_dir + ", number of examples: " + str(len(self.examples)))
+    def __init__(self, examples):
+        self.examples = examples
 
     def __len__(self):
         return len(self.examples)
 
     def __getitem__(self, idx):
         return self.examples[idx]
+
+
+def make_datasets(dataset_dir):
+    train_examples = []
+    val_examples = []
+    for root, dirs, files in os.walk(dataset_dir, topdown=False):
+        for name in tqdm(files):
+            with open(os.path.join(root, name), 'rb') as fin:
+                while True:
+                    try:
+                        s = torch.from_numpy(np.load(fin))
+                        a = torch.from_numpy(np.load(fin)).type(torch.long)
+                        w = torch.from_numpy(np.load(fin)).type(torch.float32)
+                        assert (len(s) == len(a))
+                        if random() < TRAIN_TEST_SPLIT:
+                            for i in range(len(s)):
+                                if random() < SAMPLE_INCLUDE_PROB:
+                                    train_examples.append((s[i], a[i], w))
+                        else:
+                            for i in range(len(s)):
+                                if random() < SAMPLE_INCLUDE_PROB:
+                                    val_examples.append((s[i], a[i], w))
+                    except ValueError:
+                        break
+    return GameDataset(train_examples), GameDataset(val_examples)
 
 
 def val(valset, model, loss_fn, save_name, log_iter=0):
@@ -82,20 +95,7 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
 
 
 def start_train(data_dir, save_name):
-    dataset = GameDataset(data_dir)
-    train_set_size = int(len(dataset) * TRAIN_TEST_SPLIT)
-    val_set_size = len(dataset) - train_set_size
-    trainset, valset = torch.utils.data.random_split(dataset, [train_set_size, val_set_size])
-    trainset = torch.utils.data.DataLoader(
-        trainset,
-        shuffle=True,
-        batch_size=BATCH_SIZE
-    )
-    valset = torch.utils.data.DataLoader(
-        valset,
-        shuffle=True,
-        batch_size=BATCH_SIZE
-    )
+    trainset, valset = make_datasets(data_dir)
     # board size, # filters, # blocks
     model = Net(9, 32, 4)
     # model.load_state_dict(torch.load("model_state_dict.pth19.pth"))
