@@ -93,16 +93,17 @@ float MCTSPlayer::visit(const game::GameState &state) {
   // equivalent to neginf
   float max_u = -100000000.0f;
   int best_action_idx = -1;
+  // TODO: correct this math. currently this does sum_a N(s, a) + 1 to explore
+  // precompute sqrt(sum_a N(s, a)) term for all items
+  float sqrt_term = sqrt(std::accumulate(map_[state].N.begin(),
+                                         map_[state].N.end(), 1));
   for (int legal_idx : *(state.get_legal_action_indexes())) {
     // u = Q(s, a) + cpuct * P(s, a) * sqrt(sum_a N(s, a)) / (1 + N(s, a))
-    // TODO: correct this math. currently this does sum_a N(s, a) + 1 to explore
     // the max-policy action on the first playout, but this doesn't seem to be
     // talked about anywhere
     float u = map_[state].Q[legal_idx] +
               MCTS_CPUCT * map_[state].P[legal_idx] *
-                  sqrt(std::accumulate(map_[state].N.begin(),
-                                       map_[state].N.end(), 1)) /
-                  (1 + map_[state].N[legal_idx]);
+                  sqrt_term / (1 + map_[state].N[legal_idx]);
     if (u > max_u) {
       max_u = u;
       best_action_idx = legal_idx;
