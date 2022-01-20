@@ -52,7 +52,17 @@ def make_datasets(dataset_dir):
                                     val_examples.append((s[i], a[i], w))
                     except ValueError:
                         break
-    return GameDataset(train_examples), GameDataset(val_examples)
+    trainset = torch.utils.data.DataLoader(
+    	GameDataset(train_examples),
+    	shuffle=True, 
+    	batch_size=BATCH_SIZE
+    )
+    valset = torch.utils.data.DataLoader(
+    	GameDataset(val_examples),
+    	shuffle=True,
+    	batch_size=BATCH_SIZE
+    )
+    return trainset, valset
 
 
 def val(valset, model, loss_fn, save_name, log_iter=0):
@@ -97,7 +107,7 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
 def start_train(data_dir, save_name):
     trainset, valset = make_datasets(data_dir)
     # board size, # filters, # blocks
-    model = Net(9, 32, 4)
+    model = Net(9, 64, 5)
     # model.load_state_dict(torch.load("model_state_dict.pth19.pth"))
     model = model.to(DEVICE)
     loss_fn = AlphaLoss()
