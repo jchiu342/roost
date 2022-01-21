@@ -110,8 +110,7 @@ void GameState::move(Action action) {
   }
   case PASS: {
     ++passes_;
-
-    if (passes_ >= 3) {
+    if (passes_ >= 2) {
       done_ = true;
       float game_score = score();
       if (game_score > 1e-8)

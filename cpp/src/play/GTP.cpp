@@ -51,9 +51,6 @@ void GTP::run() {
       } else {
           std::cout << "=\n" << std::endl;
       }
-      if (s.done()) {
-        done = true;
-      }
     }
   } catch (std::exception &e) {
     std::cerr << "Game crashed; error: " << e.what() << "\n";

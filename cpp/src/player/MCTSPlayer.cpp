@@ -94,8 +94,7 @@ void MCTSPlayer::visit(const game::GameState &state) {
   float max_u = -100000000.0f;
   int best_action_idx = -1;
   // precompute sqrt(sum_a N(s, a)) term for all items
-  float sqrt_term = std::sqrt(std::accumulate(map_[state].N.begin(),
-                                         map_[state].N.end(), 0));
+  float sqrt_term = std::sqrt(map_[state].Ns);
   // calculate P(explored) term for FPU
   float c_fpu_term = 0.0;
   for (int legal_idx : *(state.get_legal_action_indexes())) {
