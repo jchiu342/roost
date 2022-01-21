@@ -129,8 +129,9 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
   }
   const std::vector<int> legal_actions = *state.get_legal_action_indexes();
   size_t num_values = legal_actions.size();
+  const float alpha = DIRICHLET_UNSCALED_ALPHA / num_values;
   // generate dirichlet-distributed vector
-  std::gamma_distribution<float> d(DIRICHLET_ALPHA, 1);
+  std::gamma_distribution<float> d(alpha, 1);
   std::vector<float> values;
   // small number to prevent div by 0 errors
   float sum = 1e-8;
