@@ -73,9 +73,9 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
 
 void MCTSPlayer::reset() { map_.clear(); }
 
-float MCTSPlayer::visit(const game::GameState &state) {
+void MCTSPlayer::visit(const game::GameState &state) {
   if (state.done()) {
-    return (state.winner() == game::BLACK ? 1.0f : -1.0f);
+    return;
   }
   // if never visited, expand
   if (!map_.contains(state)) {
@@ -85,23 +85,30 @@ float MCTSPlayer::visit(const game::GameState &state) {
     Evaluator::Evaluation eval = evaluator_->Evaluate(state);
     // cache our policy and value
     map_[state].P = eval.policy_;
+    map_[state].Ns = 1;
+    map_[state].Qs = eval.value_;
     assert(map_[state].P.size() == BOARD_SIZE * BOARD_SIZE + 1);
-    return eval.value_;
+    return;
   }
-  // std::cout << "map contains state already" << std::endl;
-  // get best child and visit it
-  // equivalent to neginf
+  // TODO: rewrite MCTS to handle transpositions
   float max_u = -100000000.0f;
   int best_action_idx = -1;
-  // TODO: correct this math. currently this does sum_a N(s, a) + 1 to explore
   // precompute sqrt(sum_a N(s, a)) term for all items
-  float sqrt_term = sqrt(std::accumulate(map_[state].N.begin(),
-                                         map_[state].N.end(), 1));
+  float sqrt_term = std::sqrt(std::accumulate(map_[state].N.begin(),
+                                         map_[state].N.end(), 0));
+  // calculate P(explored) term for FPU
+  float c_fpu_term = 0.0;
+  for (int legal_idx : *(state.get_legal_action_indexes())) {
+    if (map_[state].N[legal_idx] > 0) {
+      c_fpu_term += map_[state].P[legal_idx];
+    }
+  }
+  // if we are white, we take -Q for all Q's since we try to minimize
+  c_fpu_term = (state.get_turn() == game::BLACK ? map_[state].Qs : -map_[state].Qs) - MCTS_CFPU * std::sqrt(c_fpu_term);
   for (int legal_idx : *(state.get_legal_action_indexes())) {
     // u = Q(s, a) + cpuct * P(s, a) * sqrt(sum_a N(s, a)) / (1 + N(s, a))
-    // the max-policy action on the first playout, but this doesn't seem to be
-    // talked about anywhere
-    float u = map_[state].Q[legal_idx] +
+    float u = (map_[state].N[legal_idx] == 0 ? c_fpu_term :
+               (state.get_turn() == game::BLACK ? map_[state].Q[legal_idx] : -map_[state].Q[legal_idx])) +
               MCTS_CPUCT * map_[state].P[legal_idx] *
                   sqrt_term / (1 + map_[state].N[legal_idx]);
     if (u > max_u) {
@@ -109,18 +116,26 @@ float MCTSPlayer::visit(const game::GameState &state) {
       best_action_idx = legal_idx;
     }
   }
+  if (best_action_idx < 0) {
+    throw std::logic_error("invalid mcts action");
+  }
+  int old_nsa = map_[state].N[best_action_idx];
+  float old_qsa = map_[state].Q[best_action_idx];
   game::GameState state_copy = state;
   state_copy.move(game::Action(state.get_turn(), best_action_idx));
-  float v = visit(state_copy);
-  // if we're white, we want to store -v, since we're trying to minimize the
-  // score Q(s, a) = (N(s, a)*Q(s, a) + v) / (N(s, a) + 1)
-  map_[state].Q[best_action_idx] =
-      (static_cast<float>(map_[state].N[best_action_idx]) *
-           map_[state].Q[best_action_idx] +
-       (state.get_turn() == game::BLACK ? v : -v)) /
-      static_cast<float>(map_[state].N[best_action_idx] + 1);
-  ++map_[state].N[best_action_idx];
-  return v;
+  if (state_copy.done()) {
+    map_[state].Q[best_action_idx] = state_copy.winner() == game::BLACK ? 1 : -1;
+    ++map_[state].N[best_action_idx];
+    map_[state].Qs = ((map_[state].Qs * map_[state].Ns) + map_[state].Q[best_action_idx]) / (map_[state].Ns + 1);
+    ++map_[state].Ns;
+    return;
+  }
+  visit(state_copy);
+  map_[state].Qs = ((map_[state].Qs * map_[state].Ns) - (old_qsa * old_nsa) + (map_[state_copy].Qs * map_[state_copy].Ns)) /
+          (map_[state].Ns - old_nsa + map_[state_copy].Ns);
+  map_[state].Ns += (map_[state_copy].Ns - old_nsa);
+  map_[state].Q[best_action_idx] = map_[state_copy].Qs;
+  map_[state].N[best_action_idx] = map_[state_copy].Ns;
 }
 
 void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {

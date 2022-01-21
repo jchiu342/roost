@@ -20,6 +20,9 @@ class MCTSPlayer : public AbstractPlayer {
     std::vector<int> N;
     std::vector<float> Q;
     std::vector<float> P;
+    // our own value of N and Q
+    int Ns;
+    float Qs;
   };
 
 public:
@@ -30,7 +33,7 @@ public:
   void reset() override;
 
 private:
-  float visit(const game::GameState &state);
+  void visit(const game::GameState &state);
   void apply_dirichlet_noise_(const game::GameState &state);
   std::shared_ptr<Evaluator> evaluator_;
   std::unordered_map<game::GameState, MCTSNode> map_;
