@@ -18,16 +18,19 @@ MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
 game::Action MCTSPlayer::get_move(game::GameState state, std::string *playout_log) {
   // assert(state.get_turn() == color_);
   visit(state);
+  int eff_playouts = playouts_;
   if (!eval_mode_ && use_pcr_) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
     if (dist(gen_) < PCR_P) {
       // perform a full search
       apply_dirichlet_noise_(state);
+      eff_playouts = pcr_big_;
       for (int i = 1; i < pcr_big_; ++i) {
         visit(state);
       }
     } else {
       // quick search; no dirichlet noise
+      eff_playouts = pcr_small_;
       for (int i = 1; i < pcr_small_; ++i) {
         visit(state);
       }
@@ -53,7 +56,7 @@ game::Action MCTSPlayer::get_move(game::GameState state, std::string *playout_lo
   // games (30 in 19x19 AGZ)
   if ((!eval_mode_ || state.get_num_turns() < TEMP_0_MOVE_NUM_VAL) &&
       state.get_num_turns() < TEMP_0_MOVE_NUM_TRAIN) {
-    std::uniform_int_distribution<> dist(1, playouts_);
+    std::uniform_int_distribution<> dist(1, eff_playouts);
     int vis_num = dist(gen_);
     int counter = 0;
     for (int legal_idx : *(state.get_legal_action_indexes())) {

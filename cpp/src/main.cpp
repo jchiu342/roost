@@ -47,6 +47,37 @@ void generate_data(int num_threads, int games, int playouts,
   fs::current_path(starting_path);
 }
 
+void generate_data_pcr(int num_threads, int games, int small, int big,
+                   const std::string &model_file, const std::string &save_dir) {
+  std::shared_ptr<Evaluator> eval =
+      std::make_shared<NNEvaluator<32>>(model_file);
+  std::shared_ptr<std::atomic<int>> win_counter =
+      std::make_shared<std::atomic<int>>(0);
+  std::shared_ptr<std::atomic<int>> game_counter =
+      std::make_shared<std::atomic<int>>(0);
+  auto task = [&, eval, num_threads, small, big, win_counter,
+               game_counter](int tid, int games) {
+    std::shared_ptr<AbstractPlayer> black =
+        std::make_shared<MCTSPlayer>(eval, -1, false, true, small, big);
+    std::shared_ptr<AbstractPlayer> white =
+        std::make_shared<MCTSPlayer>(eval, -1, false, true, small, big);
+    Match m(black, white, games, num_threads, tid, win_counter, game_counter);
+    m.run();
+  };
+  auto starting_path = fs::current_path();
+  fs::create_directory(save_dir);
+  fs::current_path(save_dir);
+  std::vector<std::thread> threads;
+  threads.reserve(num_threads);
+  for (int i = 0; i < num_threads; ++i) {
+    threads.emplace_back(std::thread{task, i, games});
+  }
+  for (int i = 0; i < num_threads; ++i) {
+    threads[i].join();
+  }
+  fs::current_path(starting_path);
+}
+
 int test_strength(const std::string &black_model_file,
                   const std::string &white_model_file, int num_threads,
                   int games, int playouts, const std::string &save_dir) {
@@ -115,6 +146,17 @@ int main(int argc, char *argv[]) {
     int num_playouts = stoi(argv[5]);
     generate_data(num_threads, num_games, num_playouts, model_file, argv[6]);
     return 0;
+  } else if (command == "generate_data_pcr") {
+    if (argc < 8) {
+      std::cout << "generate_data_pcr usage: ./roost generate_data <model_file> <num_games> <num_threads> <n> <N> <save_directory>\n";
+      return -1;
+    }
+    std::string model_file = argv[2];
+    int num_games = stoi(argv[3]);
+    int num_threads = stoi(argv[4]);
+    int small = stoi(argv[5]);
+    int big = stoi(argv[6]);
+    generate_data_pcr(num_threads, num_games, small, big, model_file, argv[7]);
   } else if (command == "test_strength") {
     if (argc < 7) {
       std::cout << "test_strength usage: ./roost test_strength <model_1_file> "
