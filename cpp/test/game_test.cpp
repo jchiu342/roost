@@ -28,8 +28,6 @@ TEST(GameTest, GameStateLogicTest) {
   state.move(Action(Color::BLACK, ActionType::PLAY, 0, 0));
   std::cout << state.to_string() << std::endl;
   EXPECT_EQ(false, state.is_legal_action(Action(Color::WHITE, ActionType::PLAY, 1, 0)));
-  state.move(Action(Color::WHITE, ActionType::PASS));
-  state.move(Action(Color::BLACK, ActionType::PASS));
   state.move(Action(Color::WHITE, ActionType::PLAY, 5, 5));
   state.move(Action(Color::BLACK, ActionType::PLAY, 8, 0));
   state.move(Action(Color::WHITE, ActionType::PLAY, 0, 1));
