@@ -39,7 +39,7 @@ def make_datasets(dataset_dir):
                 while True:
                     try:
                         s = torch.from_numpy(np.load(fin))
-                        a = torch.from_numpy(np.load(fin)).type(torch.long)
+                        a = torch.from_numpy(np.load(fin)).type(torch.float16)
                         w = torch.from_numpy(np.load(fin)).type(torch.float32)
                         assert (len(s) == len(a))
                         if random() < TRAIN_TEST_SPLIT:

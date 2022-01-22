@@ -6,14 +6,16 @@ from macros import *
 import numpy as np
 from fire import Fire
 from tqdm import tqdm
+import re
 import random
 import sys
 import os
 
+SAMPLE_PLAYOUT_NUM = 250
 
 # TODO: make this less hacky
 # ONLY WORKS FOR BOARD_SIZE <= 9
-def read_from_sgf(game_dir, save_file, train_split=0.8):
+def read_from_sgf(game_dir, save_file):
     fout = open(save_file, "ab+")
     for root, dirs, files in os.walk(game_dir, topdown=False):
         for name in tqdm(files):
@@ -34,8 +36,17 @@ def read_from_sgf(game_dir, save_file, train_split=0.8):
                             else:
                                 action = Action(color, PLAY, x=(ord(line[3]) - ord('a')), y=(ord(line[4]) - ord('a')))
                             if not game.done:
-                                states.append(get_nn_input(game))
-                                actions.append(from_action(action))
+                                action_dist = [0] * (BOARD_SIZE * BOARD_SIZE + 1)
+                                nums = re.findall(r'\d+', line)
+                                num_playouts = 0
+                                assert(len(nums) % 2 == 0)
+                                for i in range(len(nums) // 2):
+                                    action_dist[int(nums[i * 2])] = int(nums[i * 2 + 1])
+                                    num_playouts += int(nums[i * 2 + 1])
+                                if num_playouts > SAMPLE_PLAYOUT_NUM:
+                                    states.append(get_nn_input(game))
+                                    action_dist = [i / num_playouts for i in action_dist]
+                                    actions.append(action_dist)
                                 game.move(action)
                         elif line.find("RE[") != -1:
                             winner = WHITE if line.find("RE[W") != -1 else BLACK

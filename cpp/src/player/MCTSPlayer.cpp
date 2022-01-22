@@ -15,7 +15,7 @@ MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
       playouts_(playouts), eval_mode_(eval_mode), use_pcr_(use_pcr),
       pcr_small_(pcr_small), pcr_big_(pcr_big) {}
 
-game::Action MCTSPlayer::get_move(game::GameState state) {
+game::Action MCTSPlayer::get_move(game::GameState state, std::string *playout_log) {
   // assert(state.get_turn() == color_);
   visit(state);
   if (!eval_mode_ && use_pcr_) {
@@ -37,6 +37,16 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
     for (int i = 1; i < playouts_; ++i) {
       visit(state);
     }
+  }
+  if (playout_log != nullptr) {
+    *playout_log = "C[";
+    for (int legal_idx : *(state.get_legal_action_indexes())) {
+      if (map_[state].N[legal_idx] > 0) {
+        *playout_log += std::to_string(legal_idx) + ' ' +
+                        std::to_string(map_[state].N[legal_idx]) + ",";
+      }
+    }
+    *playout_log += "]\n";
   }
   // not sure how randommness is achieved in AGZ for eval games, so I keep
   // temp = 1 for first 10 moves in eval games and first 20 moves in self-play
@@ -69,6 +79,10 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
     return map_state.get_num_turns() <= state.get_num_turns();
   });
   return {state.get_turn(), best_action_idx};
+}
+
+game::Action MCTSPlayer::get_move(game::GameState state) {
+  return get_move(std::move(state), nullptr);
 }
 
 void MCTSPlayer::reset() { map_.clear(); }

@@ -98,7 +98,7 @@ std::string Action::to_sgf_string() const {
     return_string += static_cast<char>('a' + get_x());
     return_string += static_cast<char>('a' + get_y());
   }
-  return_string += "]\n";
+  return_string += "]";
   return return_string;
 }
 
