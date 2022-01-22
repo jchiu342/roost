@@ -52,26 +52,24 @@ class OutBlock(nn.Module):
     def __init__(self, board_size, num_filters):
         super().__init__()
         self.board_size = board_size
-        self.conv = nn.Conv2d(num_filters, 1, kernel_size=1)  # value head
-        self.bn = nn.BatchNorm2d(1)
-        self.fc1 = nn.Linear(board_size * board_size, num_filters)
-        self.fc2 = nn.Linear(num_filters, 1)
+        self.v_conv1 = nn.Conv2d(num_filters, 1, kernel_size=1)  # value head
+        self.v_bn1 = nn.BatchNorm2d(1)
+        self.v_fc1 = nn.Linear(board_size * board_size, num_filters)
+        self.v_fc2 = nn.Linear(num_filters, 1)
 
-        self.conv1 = nn.Conv2d(num_filters, 2, kernel_size=1)  # policy head
-        self.bn1 = nn.BatchNorm2d(2)
-        self.logsoftmax = nn.LogSoftmax(dim=1)
-        self.fc = nn.Linear(board_size * board_size * 2, board_size * board_size + 1)
+        self.p_conv1 = nn.Conv2d(num_filters, 2, kernel_size=1)  # policy head
+        self.p_bn1 = nn.BatchNorm2d(2)
+        self.p_fc1 = nn.Linear(board_size * board_size * 2, board_size * board_size + 1)
 
     def forward(self, s):
-        v = F.relu(self.bn(self.conv(s)))  # value head
+        v = F.relu(self.v_bn1(self.v_conv1(s)))  # value head
         v = v.view(-1, self.board_size * self.board_size)  # batch_size X channel X height X width
-        v = F.relu(self.fc1(v))
-        v = torch.tanh(self.fc2(v))
+        v = F.relu(self.v_fc1(v))
+        v = torch.tanh(self.v_fc2(v))
 
-        p = F.relu(self.bn1(self.conv1(s)))  # policy head
+        p = F.relu(self.p_bn1(self.p_conv1(s)))  # policy head
         p = p.view(-1, self.board_size * self.board_size * 2)
-        p = self.fc(p)
-        p = self.logsoftmax(p).exp()
+        p = self.p_fc1(p)
         return p, v
 
 
@@ -86,17 +84,6 @@ class Net(nn.Module):
 
     def forward(self, s):
         return self.blocks(s)
-#         self.conv = ConvBlock()
-#         for block in range(19):
-#             setattr(self, "res_%i" % block, ResBlock())
-#         self.outblock = OutBlock()
-#
-#     def forward(self, s):
-#         s = self.conv(s)
-#         for block in range(19):
-#             s = getattr(self, "res_%i" % block)(s)
-#         s = self.outblock(s)
-#         return s
 
 
 class AlphaLoss(torch.nn.Module):

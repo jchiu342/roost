@@ -16,7 +16,7 @@ EPOCH = 75
 BATCH_SIZE = 256
 TRAIN_TEST_SPLIT = 0.9
 SAMPLE_INCLUDE_PROB = 0.5
-SAMPLES_PER_EPOCH = 1000
+SAMPLES_PER_EPOCH = 50
 
 
 class GameDataset(torch.utils.data.Dataset):
@@ -39,7 +39,7 @@ def make_datasets(dataset_dir):
                 while True:
                     try:
                         s = torch.from_numpy(np.load(fin))
-                        a = torch.from_numpy(np.load(fin)).type(torch.float16)
+                        a = torch.from_numpy(np.load(fin)).type(torch.float32)
                         w = torch.from_numpy(np.load(fin)).type(torch.float32)
                         assert (len(s) == len(a))
                         if random() < TRAIN_TEST_SPLIT:
@@ -107,7 +107,7 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
 def start_train(data_dir, save_name):
     trainset, valset = make_datasets(data_dir)
     # board size, # filters, # blocks
-    model = Net(9, 64, 5)
+    model = Net(9, 32, 4)
     # model.load_state_dict(torch.load("model_state_dict.pth19.pth"))
     model = model.to(DEVICE)
     loss_fn = AlphaLoss()
