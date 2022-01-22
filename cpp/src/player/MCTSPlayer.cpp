@@ -16,7 +16,6 @@ MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
       pcr_small_(pcr_small), pcr_big_(pcr_big) {}
 
 game::Action MCTSPlayer::get_move(game::GameState state, std::string *playout_log) {
-  // assert(state.get_turn() == color_);
   visit(state);
   if (!eval_mode_ && use_pcr_) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
@@ -133,17 +132,8 @@ float MCTSPlayer::visit(const game::GameState &state) {
   if (best_action_idx < 0) {
     throw std::logic_error("invalid mcts action");
   }
-  // int old_nsa = map_[state].N[best_action_idx];
-  // float old_qsa = map_[state].Q[best_action_idx];
   game::GameState state_copy = state;
   state_copy.move(game::Action(state.get_turn(), best_action_idx));
-  /* if (state_copy.done()) {
-    map_[state].Q[best_action_idx] = state_copy.winner() == game::BLACK ? 1.0f : -1.0f;
-    ++map_[state].N[best_action_idx];
-    map_[state].Qs = ((map_[state].Qs * map_[state].Ns) + map_[state].Q[best_action_idx]) / (map_[state].Ns + 1);
-    ++map_[state].Ns;
-    return;
-  }*/
   float result = visit(state_copy);
   map_[state].Qs = ((map_[state].Qs * map_[state].Ns) + result) / (map_[state].Ns + 1);
   ++(map_[state].Ns);

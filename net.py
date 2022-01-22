@@ -93,12 +93,4 @@ class AlphaLoss(torch.nn.Module):
         self.cross_entropy_loss = nn.CrossEntropyLoss(reduction='mean')
 
     def forward(self, y_policy, policy, y_value, value):
-        # value_error = (value - y_value) ** 2
-        # policy_error = torch.sum((-policy *
-        #                           (1e-8 + y_policy.float()).float().log()), 1)
-        # total_error = (value_error.view(-1).float() + policy_error).mean()
-        # print(self.mse_loss(y_value, value))
-        # print(self.cross_entropy_loss(y_policy, policy))
-        # print(value_error)
-        # print(policy_error)
         return self.mse_loss(y_value[:, 0], value) + self.cross_entropy_loss(y_policy, policy)
