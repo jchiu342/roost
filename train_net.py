@@ -14,9 +14,9 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 EPOCH = 75
 BATCH_SIZE = 256
-TRAIN_TEST_SPLIT = 0.9
-SAMPLE_INCLUDE_PROB = 0.5
-SAMPLES_PER_EPOCH = 50
+TRAIN_TEST_SPLIT = 0.8
+SAMPLE_INCLUDE_PROB = 1.0
+SAMPLES_PER_EPOCH = 500
 
 
 class GameDataset(torch.utils.data.Dataset):
@@ -111,7 +111,7 @@ def start_train(data_dir, save_name):
     # model.load_state_dict(torch.load("model_state_dict.pth19.pth"))
     model = model.to(DEVICE)
     loss_fn = AlphaLoss()
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.01, weight_decay=1e-4)
     train(trainset, valset, model, loss_fn, optimizer, save_name)
 
 

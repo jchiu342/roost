@@ -11,7 +11,7 @@ import random
 import sys
 import os
 
-SAMPLE_PLAYOUT_NUM = 98
+SAMPLE_PLAYOUT_NUM = 599
 
 # TODO: make this less hacky
 # ONLY WORKS FOR BOARD_SIZE <= 9
