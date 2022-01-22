@@ -59,9 +59,9 @@ TEST(PlayerTest, DISABLED_NNTest) {
 }
 
 // test NNEvaluator correctness under multiple threads
-TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
+TEST(PlayerTest, MultiThreadNNTest) {
   constexpr size_t num_threads = 16;
-  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("net1.pt");
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("lognet43.pt");
   std::vector<game::GameState> states;
   std::vector<float> evals;
   states.reserve(num_threads);
@@ -76,6 +76,9 @@ TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
   auto task = [&eval, &states, &evals](int tid) {
     Evaluator::Evaluation x = eval->Evaluate(states[tid]);
     evals[tid] = x.value_;
+    ASSERT_TRUE(evals[tid] < 1.001 && evals[tid] > -1.001);
+    float sum = std::accumulate(x.policy_.begin(), x.policy_.end(), 0.0);
+    ASSERT_TRUE(sum > 1 - 1e-3 && sum < 1 + 1e-3);
   };
 
   std::vector<std::thread> threads;
@@ -87,11 +90,11 @@ TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
     threads[i].join();
   }
   // check correctness against single-thread mode
-  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator<1>>("net1.pt");
+  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator<1>>("lognet43.pt");
   for (size_t i = 0; i < num_threads; ++i) {
     Evaluator::Evaluation x = st_eval->Evaluate(states[i]);
     // account for some rounding errors
-    ASSERT_TRUE(abs(x.value_ -evals[i]) < 1e-5);
+    ASSERT_TRUE(abs(x.value_ - evals[i]) < 1e-4);
     // std::cout << x.value_ << ' ' << evals[i] << std::endl;
   }
 }
@@ -142,7 +145,7 @@ TEST(PlayerTest, DISABLED_SpeedTest) {
   std::cout << "avg: " << std::fixed << sum / (num_iters - 1) << std::endl;
 }
 
-TEST(PlayerTest, GTPTest) {
+TEST(PlayerTest, DISABLED_GTPTest) {
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<1>>("net1.pt");
   std::shared_ptr<AbstractPlayer> engine = std::make_shared<MCTSPlayer>(eval, 1000, true);
   GTP gtp_runner(engine);
