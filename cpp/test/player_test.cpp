@@ -145,9 +145,9 @@ TEST(PlayerTest, DISABLED_SpeedTest) {
   std::cout << "avg: " << std::fixed << sum / (num_iters - 1) << std::endl;
 }
 
-TEST(PlayerTest, DISABLED_GTPTest) {
-  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<1>>("net1.pt");
-  std::shared_ptr<AbstractPlayer> engine = std::make_shared<MCTSPlayer>(eval, 1000, true);
+TEST(PlayerTest, GTPTest) {
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<1>>("lognet43.pt");
+  std::shared_ptr<AbstractPlayer> engine = std::make_shared<MCTSPlayer>(eval, 100, true);
   GTP gtp_runner(engine);
   gtp_runner.run();
 }

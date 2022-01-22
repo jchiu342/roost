@@ -15,6 +15,7 @@ void GTP::run() {
     game::GameState s(7.5);
     bool done = false;
     std::string input_str;
+    std::string playout_log;
     while (!done) {
       std::cerr << s.to_string() << "\n";
       getline(std::cin, input_str);
@@ -25,15 +26,17 @@ void GTP::run() {
         if (s.get_turn() != game::BLACK) {
           throw std::logic_error("invalid genmove turn");
         }
-        game::Action a = engine_->get_move(s);
+        game::Action a = engine_->get_move(s, &playout_log);
         std::cout << a.to_gtp_string() << "\n" << std::endl;
+        std::cerr << playout_log;
         s.move(a);
       } else if (input_str == "genmove w") {
         if (s.get_turn() != game::WHITE) {
           throw std::logic_error("invalid genmove turn");
         }
-        game::Action a = engine_->get_move(s);
+        game::Action a = engine_->get_move(s, &playout_log);
         std::cout << a.to_gtp_string() << "\n" << std::endl;
+        std::cerr << playout_log;
         s.move(a);
       } else if (input_str.substr(0, 4) == "play") {
         s.move(game::Action::from_action(input_str));

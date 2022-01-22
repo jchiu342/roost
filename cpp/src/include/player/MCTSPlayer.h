@@ -35,7 +35,7 @@ public:
   void reset() override;
 
 private:
-  void visit(const game::GameState &state);
+  float visit(const game::GameState &state);
   void apply_dirichlet_noise_(const game::GameState &state);
   std::shared_ptr<Evaluator> evaluator_;
   std::unordered_map<game::GameState, MCTSNode> map_;

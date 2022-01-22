@@ -18,19 +18,16 @@ MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
 game::Action MCTSPlayer::get_move(game::GameState state, std::string *playout_log) {
   // assert(state.get_turn() == color_);
   visit(state);
-  int eff_playouts = playouts_;
   if (!eval_mode_ && use_pcr_) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
     if (dist(gen_) < PCR_P) {
       // perform a full search
       apply_dirichlet_noise_(state);
-      eff_playouts = pcr_big_;
       for (int i = 1; i < pcr_big_; ++i) {
         visit(state);
       }
     } else {
       // quick search; no dirichlet noise
-      eff_playouts = pcr_small_;
       for (int i = 1; i < pcr_small_; ++i) {
         visit(state);
       }
@@ -51,12 +48,13 @@ game::Action MCTSPlayer::get_move(game::GameState state, std::string *playout_lo
     }
     *playout_log += "]\n";
   }
+
   // not sure how randommness is achieved in AGZ for eval games, so I keep
   // temp = 1 for first 10 moves in eval games and first 20 moves in self-play
   // games (30 in 19x19 AGZ)
   if ((!eval_mode_ || state.get_num_turns() < TEMP_0_MOVE_NUM_VAL) &&
       state.get_num_turns() < TEMP_0_MOVE_NUM_TRAIN) {
-    std::uniform_int_distribution<> dist(1, eff_playouts);
+    std::uniform_int_distribution<> dist(1, std::accumulate(map_[state].N.begin(), map_[state].N.end(), 0));
     int vis_num = dist(gen_);
     int counter = 0;
     for (int legal_idx : *(state.get_legal_action_indexes())) {
@@ -90,9 +88,9 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
 
 void MCTSPlayer::reset() { map_.clear(); }
 
-void MCTSPlayer::visit(const game::GameState &state) {
+float MCTSPlayer::visit(const game::GameState &state) {
   if (state.done()) {
-    return;
+    return (state.winner() == game::BLACK ? 1.0f : -1.0f);
   }
   // if never visited, expand
   if (!map_.contains(state)) {
@@ -105,7 +103,7 @@ void MCTSPlayer::visit(const game::GameState &state) {
     map_[state].Ns = 1;
     map_[state].Qs = eval.value_;
     assert(map_[state].P.size() == BOARD_SIZE * BOARD_SIZE + 1);
-    return;
+    return eval.value_;
   }
   // TODO: rewrite MCTS to handle transpositions
   float max_u = -100000000.0f;
@@ -135,23 +133,29 @@ void MCTSPlayer::visit(const game::GameState &state) {
   if (best_action_idx < 0) {
     throw std::logic_error("invalid mcts action");
   }
-  int old_nsa = map_[state].N[best_action_idx];
-  float old_qsa = map_[state].Q[best_action_idx];
+  // int old_nsa = map_[state].N[best_action_idx];
+  // float old_qsa = map_[state].Q[best_action_idx];
   game::GameState state_copy = state;
   state_copy.move(game::Action(state.get_turn(), best_action_idx));
-  if (state_copy.done()) {
-    map_[state].Q[best_action_idx] = state_copy.winner() == game::BLACK ? 1 : -1;
+  /* if (state_copy.done()) {
+    map_[state].Q[best_action_idx] = state_copy.winner() == game::BLACK ? 1.0f : -1.0f;
     ++map_[state].N[best_action_idx];
     map_[state].Qs = ((map_[state].Qs * map_[state].Ns) + map_[state].Q[best_action_idx]) / (map_[state].Ns + 1);
     ++map_[state].Ns;
     return;
+  }*/
+  float result = visit(state_copy);
+  map_[state].Qs = ((map_[state].Qs * map_[state].Ns) + result) / (map_[state].Ns + 1);
+  ++(map_[state].Ns);
+  if (!state_copy.done()) {
+    map_[state].Q[best_action_idx] = map_[state_copy].Qs;
+    map_[state].N[best_action_idx] = map_[state_copy].Ns;
+  } else {
+    // we can't hash finished positions, so we just update manually
+    map_[state].Q[best_action_idx] = result;
+    ++(map_[state].N[best_action_idx]);
   }
-  visit(state_copy);
-  map_[state].Qs = ((map_[state].Qs * map_[state].Ns) - (old_qsa * old_nsa) + (map_[state_copy].Qs * map_[state_copy].Ns)) /
-          (map_[state].Ns - old_nsa + map_[state_copy].Ns);
-  map_[state].Ns += (map_[state_copy].Ns - old_nsa);
-  map_[state].Q[best_action_idx] = map_[state_copy].Qs;
-  map_[state].N[best_action_idx] = map_[state_copy].Ns;
+  return result;
 }
 
 void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
