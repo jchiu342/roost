@@ -32,6 +32,7 @@ public:
              int pcr_big = 0);
   game::Action get_move(game::GameState state, std::string *playout_log) override;
   game::Action get_move(game::GameState state) override;
+  float get_wr(game::GameState state);
   void reset() override;
 
 private:
@@ -46,6 +47,7 @@ private:
   bool use_pcr_;
   int pcr_small_;
   int pcr_big_;
+
 };
 
 #endif // ROOST_MCTSPLAYER_H
