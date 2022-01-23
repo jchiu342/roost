@@ -22,7 +22,10 @@ public:
   [[nodiscard]] int get_y() const;
   [[nodiscard]] int get_index() const;
   [[maybe_unused]] [[nodiscard]] std::string to_string() const;
+  [[nodiscard]] std::string to_gtp_string() const;
   [[nodiscard]] std::string to_sgf_string() const;
+  // create action from GTP command
+  static Action from_action(const std::string &s);
 
 private:
   /* Each action is internally represented by a single integer from 1 to

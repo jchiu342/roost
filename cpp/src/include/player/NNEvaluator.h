@@ -72,6 +72,8 @@ public:
         // policy_output_ = output[0].toTensor();
         // value_output_ = output[1].toTensor();
         policy_output_ = output[0].toTensor().to(torch::kCPU);
+        policy_output_ = torch::nn::functional::softmax(policy_output_,
+                                                        torch::nn::functional::SoftmaxFuncOptions(1));
         value_output_ = output[1].toTensor().to(torch::kCPU);
         done_processing_ = true;
         cv_.notify_all();
@@ -82,18 +84,21 @@ public:
         // TODO: confirm that we evaluate predicate before locking for the first
         // time. otherwise there is a bug here
         using namespace std::chrono_literals;
-        cv_.wait_until(ul, now + 750ms, [this] { return done_processing_; });
+        cv_.wait_until(ul, now + 250ms, [this] { return done_processing_; });
         if (!done_processing_) {
-          std::cout << "program will hang; feeding input\n";
+          // std::cout << "program will hang; feeding input\n";
           Tensor input_tensor =
               torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
           std::vector<torch::jit::IValue> inputs;
           inputs.emplace_back(input_tensor.to(at::kCUDA));
           // inputs.emplace_back(input_tensor);
           auto output = module_->forward(inputs).toTuple()->elements();
-          // policy_output_ = output[0].toTensor();
+          policy_output_ = output[0].toTensor();
           // value_output_ = output[1].toTensor();
-          policy_output_ = output[0].toTensor().to(torch::kCPU);
+          // policy_output_ = output[0].toTensor().to(torch::kCPU);
+          policy_output_ = torch::nn::functional::softmax(policy_output_,
+                                                          torch::nn::functional::SoftmaxFuncOptions(1));
+          policy_output_ = policy_output_.to(torch::kCPU);
           value_output_ = output[1].toTensor().to(torch::kCPU);
           done_processing_ = true;
           cv_.notify_all();
@@ -136,16 +141,16 @@ template <int threads>
 NNEvaluator<threads>::NNEvaluator(const std::string &input_file)
     : batch_size_(threads), global_counter_(0) {
   try {
-    std::cout << "loading model " + input_file + "\n";
+    std::cerr << "loading model " + input_file + "\n";
     module_ = std::make_shared<torch::jit::script::Module>();
     // *module_ = torch::jit::load(input_file);
     *module_ = torch::jit::load(input_file, torch::kCUDA);
     module_->eval();
     // at::globalContext().setBenchmarkCuDNN(false);
-    std::cout << "model " + input_file + " loaded successfully\n";
+    std::cerr << "model " + input_file + " loaded successfully\n";
   } catch (const c10::Error &e) {
     std::cerr << "error loading model " + input_file + "\n";
-    std::cout << e.what() << std::endl;
+    std::cerr << e.what() << std::endl;
     assert(false);
   }
 }

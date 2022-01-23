@@ -6,6 +6,7 @@ import torch
 import torchvision
 from torch.utils.tensorboard import SummaryWriter
 import os
+from random import random
 from os.path import exists
 
 
@@ -13,32 +14,55 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 EPOCH = 75
 BATCH_SIZE = 256
-SAMPLES_PER_EPOCH = 1000
+TRAIN_TEST_SPLIT = 0.8
+SAMPLE_INCLUDE_PROB = 1.0
+SAMPLES_PER_EPOCH = 500
 
 
 class GameDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset_dir):
-        self.examples = []
-        for root, dirs, files in os.walk(dataset_dir, topdown=False):
-            for name in tqdm(files):
-                with open(os.path.join(root, name), 'rb') as fin:
-                    while True:
-                        try:
-                            s = torch.from_numpy(np.load(fin))
-                            a = torch.from_numpy(np.load(fin)).type(torch.long)
-                            w = torch.from_numpy(np.load(fin)).type(torch.float32)
-                            assert(len(s) == len(a))
-                            for i in range(len(s)):
-                                self.examples.append((s[i], a[i], w))
-                        except ValueError:
-                            break
-        print("Loaded " + dataset_dir + ", number of examples: " + str(len(self.examples)))
+    def __init__(self, examples):
+        self.examples = examples
 
     def __len__(self):
         return len(self.examples)
 
     def __getitem__(self, idx):
         return self.examples[idx]
+
+
+def make_datasets(dataset_dir):
+    train_examples = []
+    val_examples = []
+    for root, dirs, files in os.walk(dataset_dir, topdown=False):
+        for name in tqdm(files):
+            with open(os.path.join(root, name), 'rb') as fin:
+                while True:
+                    try:
+                        s = torch.from_numpy(np.load(fin))
+                        a = torch.from_numpy(np.load(fin)).type(torch.float32)
+                        w = torch.from_numpy(np.load(fin)).type(torch.float32)
+                        assert (len(s) == len(a))
+                        if random() < TRAIN_TEST_SPLIT:
+                            for i in range(len(s)):
+                                if random() < SAMPLE_INCLUDE_PROB:
+                                    train_examples.append((s[i], a[i], w))
+                        else:
+                            for i in range(len(s)):
+                                if random() < SAMPLE_INCLUDE_PROB:
+                                    val_examples.append((s[i], a[i], w))
+                    except ValueError:
+                        break
+    trainset = torch.utils.data.DataLoader(
+    	GameDataset(train_examples),
+    	shuffle=True, 
+    	batch_size=BATCH_SIZE
+    )
+    valset = torch.utils.data.DataLoader(
+    	GameDataset(val_examples),
+    	shuffle=True,
+    	batch_size=BATCH_SIZE
+    )
+    return trainset, valset
 
 
 def val(valset, model, loss_fn, save_name, log_iter=0):
@@ -80,23 +104,14 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
         LOGGER.add_scalar("Train loss", avg_loss, i)
 
 
-def start_train(train_dir, val_dir, save_name):
-    trainset = torch.utils.data.DataLoader(
-        GameDataset(train_dir),
-        shuffle=True,
-        batch_size=BATCH_SIZE
-    )
-    valset = torch.utils.data.DataLoader(
-        GameDataset(val_dir),
-        shuffle=True,
-        batch_size=BATCH_SIZE
-    )
+def start_train(data_dir, save_name):
+    trainset, valset = make_datasets(data_dir)
     # board size, # filters, # blocks
     model = Net(9, 32, 4)
     # model.load_state_dict(torch.load("model_state_dict.pth19.pth"))
     model = model.to(DEVICE)
     loss_fn = AlphaLoss()
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.01, weight_decay=1e-4)
     train(trainset, valset, model, loss_fn, optimizer, save_name)
 
 

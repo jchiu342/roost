@@ -6,8 +6,8 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
-#include <iterator>
 #include <memory>
+#include <stdexcept>
 
 namespace game {
 
@@ -96,7 +96,9 @@ const std::vector<int> *GameState::get_legal_action_indexes() const {
 }
 
 void GameState::move(Action action) {
-  assert(is_legal_action(action));
+  if (!is_legal_action(action)) {
+    throw std::invalid_argument("illegal action played");
+  }
   ++turns_;
   turn_ = opposite(turn_);
   hash_ ^= zobrist_->get_value(BOARD_SIZE * BOARD_SIZE * 2);
@@ -108,8 +110,7 @@ void GameState::move(Action action) {
   }
   case PASS: {
     ++passes_;
-
-    if (passes_ >= 3) {
+    if (passes_ >= 2) {
       done_ = true;
       float game_score = score();
       if (game_score > 1e-8)
@@ -405,7 +406,6 @@ void GameState::uf_delete_(int x1, int y1) {
     uf_chains_[x.first][x.second] = {-1, -1};
   }
   chain_lists_[head.first][head.second].clear();
-  // liberties_[head.first][head.second] = 0;
 }
 
 } // namespace game

@@ -5,6 +5,7 @@
 #include "game/Action.h"
 #include <cassert>
 #include <cstdlib>
+#include <stdexcept>
 
 namespace game {
 
@@ -67,9 +68,25 @@ std::string Action::to_string() const {
   case RESIGN:
     return "RESIGN";
   case PLAY:
-    return std::string("PLAY ") + (get_color() == BLACK ? "B " : "W ");
+    return std::string("PLAY ") + (get_color() == BLACK ? "B " : "W ") +
+           static_cast<char>('A' + get_x()) + static_cast<char>('1' + get_y());
   }
   return {};
+}
+
+std::string Action::to_gtp_string() const {
+  switch (get_type()) {
+  case PASS:
+    return "= PASS\n";
+  case RESIGN:
+    return "= RESIGN\n";
+  case PLAY:
+    std::string ret = "= ";
+    // why does gtp make I an illegal coordinate wtf
+    ret += static_cast<char>('A' + get_y() + (get_y() >= 8));
+    ret += static_cast<char>('9' - get_x());
+    return ret + "\n";
+  }
 }
 
 std::string Action::to_sgf_string() const {
@@ -81,8 +98,22 @@ std::string Action::to_sgf_string() const {
     return_string += static_cast<char>('a' + get_x());
     return_string += static_cast<char>('a' + get_y());
   }
-  return_string += "]\n";
+  return_string += "]";
   return return_string;
+}
+
+Action Action::from_action(const std::string &s) {
+  if (s.size() < 9) {
+    throw std::invalid_argument("Invalid action: " + s);
+  }
+  Color c = (s[5] == 'b' ? BLACK : WHITE);
+  // coordinate; must be a play
+  if (s[7] < 'p') {
+    return {c, PLAY, '9' - s[8], (s[7] < 'j') ? s[7] - 'a' : s[7] - 'b'};
+  } else if (s.substr(7, 4) == "pass") {
+    return {c, PASS};
+  }
+  return {c, RESIGN};
 }
 
 } // namespace game

@@ -23,15 +23,16 @@ int Match::run() {
     std::string sgf_string = "(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]\nRU[AGA]"
                              "SZ[9]KM[7.50]\nPW[White]PB[Black]\n";
     game::GameState state;
+    std::string temp_string;
     while (!state.done()) {
       if (state.get_turn() == game::Color::BLACK) {
-        game::Action move = black_->get_move(state);
+        game::Action move = black_->get_move(state, &temp_string);
         state.move(move);
-        sgf_string += move.to_sgf_string();
+        sgf_string += move.to_sgf_string() + temp_string;
       } else {
-        game::Action move = white_->get_move(state);
+        game::Action move = white_->get_move(state, &temp_string);
         state.move(move);
-        sgf_string += move.to_sgf_string();
+        sgf_string += move.to_sgf_string() + temp_string;
       }
     }
     if (state.winner() == game::BLACK) {
