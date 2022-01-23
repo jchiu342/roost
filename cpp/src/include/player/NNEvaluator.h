@@ -93,11 +93,12 @@ public:
           inputs.emplace_back(input_tensor.to(at::kCUDA));
           // inputs.emplace_back(input_tensor);
           auto output = module_->forward(inputs).toTuple()->elements();
-          // policy_output_ = output[0].toTensor();
+          policy_output_ = output[0].toTensor();
           // value_output_ = output[1].toTensor();
-          policy_output_ = output[0].toTensor().to(torch::kCPU);
+          // policy_output_ = output[0].toTensor().to(torch::kCPU);
           policy_output_ = torch::nn::functional::softmax(policy_output_,
                                                           torch::nn::functional::SoftmaxFuncOptions(1));
+          policy_output_ = policy_output_.to(torch::kCPU);
           value_output_ = output[1].toTensor().to(torch::kCPU);
           done_processing_ = true;
           cv_.notify_all();
