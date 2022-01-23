@@ -48,7 +48,8 @@ void generate_data(int num_threads, int games, int playouts,
 }
 
 void generate_data_pcr(int num_threads, int games, int small, int big,
-                   const std::string &model_file, const std::string &save_dir) {
+                       const std::string &model_file,
+                       const std::string &save_dir) {
   std::shared_ptr<Evaluator> eval =
       std::make_shared<NNEvaluator<32>>(model_file);
   std::shared_ptr<std::atomic<int>> win_counter =
@@ -148,7 +149,9 @@ int main(int argc, char *argv[]) {
     return 0;
   } else if (command == "generate_data_pcr") {
     if (argc < 8) {
-      std::cout << "generate_data_pcr usage: ./roost generate_data <model_file> <num_games> <num_threads> <n> <N> <save_directory>\n";
+      std::cout
+          << "generate_data_pcr usage: ./roost generate_data <model_file> "
+             "<num_games> <num_threads> <n> <N> <save_directory>\n";
       return -1;
     }
     std::string model_file = argv[2];

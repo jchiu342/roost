@@ -72,8 +72,8 @@ public:
         // policy_output_ = output[0].toTensor();
         // value_output_ = output[1].toTensor();
         policy_output_ = output[0].toTensor().to(torch::kCPU);
-        policy_output_ = torch::nn::functional::softmax(policy_output_,
-                                                        torch::nn::functional::SoftmaxFuncOptions(1));
+        policy_output_ = torch::nn::functional::softmax(
+            policy_output_, torch::nn::functional::SoftmaxFuncOptions(1));
         value_output_ = output[1].toTensor().to(torch::kCPU);
         done_processing_ = true;
         cv_.notify_all();
@@ -96,8 +96,8 @@ public:
           policy_output_ = output[0].toTensor();
           // value_output_ = output[1].toTensor();
           // policy_output_ = output[0].toTensor().to(torch::kCPU);
-          policy_output_ = torch::nn::functional::softmax(policy_output_,
-                                                          torch::nn::functional::SoftmaxFuncOptions(1));
+          policy_output_ = torch::nn::functional::softmax(
+              policy_output_, torch::nn::functional::SoftmaxFuncOptions(1));
           policy_output_ = policy_output_.to(torch::kCPU);
           value_output_ = output[1].toTensor().to(torch::kCPU);
           done_processing_ = true;

@@ -15,7 +15,8 @@ MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
       playouts_(playouts), eval_mode_(eval_mode), use_pcr_(use_pcr),
       pcr_small_(pcr_small), pcr_big_(pcr_big) {}
 
-game::Action MCTSPlayer::get_move(game::GameState state, std::string *playout_log) {
+game::Action MCTSPlayer::get_move(game::GameState state,
+                                  std::string *playout_log) {
   visit(state);
   if (!eval_mode_ && use_pcr_) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
@@ -53,7 +54,8 @@ game::Action MCTSPlayer::get_move(game::GameState state, std::string *playout_lo
   // games (30 in 19x19 AGZ)
   if ((!eval_mode_ || state.get_num_turns() < TEMP_0_MOVE_NUM_VAL) &&
       state.get_num_turns() < TEMP_0_MOVE_NUM_TRAIN) {
-    std::uniform_int_distribution<> dist(1, std::accumulate(map_[state].N.begin(), map_[state].N.end(), 0));
+    std::uniform_int_distribution<> dist(
+        1, std::accumulate(map_[state].N.begin(), map_[state].N.end(), 0));
     int vis_num = dist(gen_);
     int counter = 0;
     for (int legal_idx : *(state.get_legal_action_indexes())) {
@@ -85,10 +87,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
   return get_move(std::move(state), nullptr);
 }
 
-float MCTSPlayer::get_wr(game::GameState state) {
-  return map_[state].Qs;
-}
-
+float MCTSPlayer::get_wr(game::GameState state) { return map_[state].Qs; }
 
 void MCTSPlayer::reset() { map_.clear(); }
 
@@ -122,13 +121,18 @@ float MCTSPlayer::visit(const game::GameState &state) {
     }
   }
   // if we are white, we take -Q for all Q's since we try to minimize
-  c_fpu_term = (state.get_turn() == game::BLACK ? map_[state].Qs : -map_[state].Qs) - MCTS_CFPU * std::sqrt(c_fpu_term);
+  c_fpu_term =
+      (state.get_turn() == game::BLACK ? map_[state].Qs : -map_[state].Qs) -
+      MCTS_CFPU * std::sqrt(c_fpu_term);
   for (int legal_idx : *(state.get_legal_action_indexes())) {
     // u = Q(s, a) + cpuct * P(s, a) * sqrt(sum_a N(s, a)) / (1 + N(s, a))
-    float u = (map_[state].N[legal_idx] == 0 ? c_fpu_term :
-               (state.get_turn() == game::BLACK ? map_[state].Q[legal_idx] : -map_[state].Q[legal_idx])) +
-              MCTS_CPUCT * map_[state].P[legal_idx] *
-                  sqrt_term / (1 + map_[state].N[legal_idx]);
+    float u =
+        (map_[state].N[legal_idx] == 0
+             ? c_fpu_term
+             : (state.get_turn() == game::BLACK ? map_[state].Q[legal_idx]
+                                                : -map_[state].Q[legal_idx])) +
+        MCTS_CPUCT * map_[state].P[legal_idx] * sqrt_term /
+            (1 + map_[state].N[legal_idx]);
     if (u > max_u) {
       max_u = u;
       best_action_idx = legal_idx;
@@ -140,7 +144,8 @@ float MCTSPlayer::visit(const game::GameState &state) {
   game::GameState state_copy = state;
   state_copy.move(game::Action(state.get_turn(), best_action_idx));
   float result = visit(state_copy);
-  map_[state].Qs = ((map_[state].Qs * map_[state].Ns) + result) / (map_[state].Ns + 1);
+  map_[state].Qs =
+      ((map_[state].Qs * map_[state].Ns) + result) / (map_[state].Ns + 1);
   ++(map_[state].Ns);
   if (!state_copy.done()) {
     map_[state].Q[best_action_idx] = map_[state_copy].Qs;
@@ -175,7 +180,8 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
     assert(!std::isnan(values[i]));
   }
   // apply dirichlet to each P(s, a)
-  const float DIRICHLET_EPSILON = (eval_mode_) ? DIRICHLET_EPSILON_VAL : DIRICHLET_EPSILON_TRAIN;
+  const float DIRICHLET_EPSILON =
+      (eval_mode_) ? DIRICHLET_EPSILON_VAL : DIRICHLET_EPSILON_TRAIN;
   for (size_t i = 0; i < num_values; ++i) {
     assert(!std::isnan(map_[state].P[legal_actions[i]]));
     map_[state].P[legal_actions[i]] =

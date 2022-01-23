@@ -13,9 +13,7 @@
 class AbstractPlayer {
 public:
   explicit AbstractPlayer() {}
-  virtual float get_wr(game::GameState state) {
-    return get_wr(std::move(state));
-  }
+  virtual float get_wr(game::GameState state) { return 0.0f; }
   virtual game::Action get_move(game::GameState state, std::string *log) {
     return get_move(std::move(state));
   }

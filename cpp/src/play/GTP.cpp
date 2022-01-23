@@ -6,9 +6,8 @@
 #include "game/Action.h"
 #include <algorithm>
 #include <iostream>
-#include <string>
-#include <cstring>
 #include <sstream>
+#include <string>
 
 GTP::GTP(std::shared_ptr<AbstractPlayer> engine) : engine_(std::move(engine)) {}
 
@@ -45,7 +44,7 @@ void GTP::run() {
         std::istringstream ss(input_str);
         std::string word;
         std::vector<std::string> input_str_list;
-        while (ss >> word){
+        while (ss >> word) {
           input_str_list.push_back(word);
         }
 
@@ -54,15 +53,18 @@ void GTP::run() {
           wr = (wr + 1) * 50;
           std::cout << "= winrate (for black) is " << wr << "\n" << std::endl;
         } else {
-          std::cout << "= don't make illegal (tetris) moves -- i will crash/bug out. please report bugs to jeremy!\n" << std::endl;
+          std::cout << "= don't make illegal (tetris) moves -- i will "
+                       "crash/bug out. please report bugs to jeremy!\n"
+                    << std::endl;
         }
       } else if (input_str.substr(0, 4) == "play") {
         s.move(game::Action::from_action(input_str));
         std::cout << "=\n" << std::endl;
       } else if (input_str == "final_score") {
         std::cout << ((s.score() > 0) ? "= B+0.5\n" : "= W+0.5\n") << std::endl;
-      } else if (input_str == "list_commands"){
-          std::cout << "= genmove\nkomi\nplay\nclear_board\nkgs-chat\n" << std::endl;
+      } else if (input_str == "list_commands") {
+        std::cout << "= genmove\nkomi\nplay\nclear_board\nkgs-chat\n"
+                  << std::endl;
       } else if (input_str == "quit") {
         done = true;
         std::cout << "=\n" << std::endl;
@@ -70,7 +72,7 @@ void GTP::run() {
         s = game::GameState(7.5);
         std::cout << "=\n" << std::endl;
       } else {
-          std::cout << "=\n" << std::endl;
+        std::cout << "=\n" << std::endl;
       }
     }
   } catch (std::exception &e) {
