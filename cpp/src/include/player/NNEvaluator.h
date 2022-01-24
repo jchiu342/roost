@@ -19,6 +19,8 @@
 #include <torch/script.h>
 #include <torch/torch.h>
 
+#define USE_CPU_ONLY
+
 using namespace torch;
 template <int threads> class NNEvaluator : public Evaluator {
 public:
@@ -67,17 +69,30 @@ public:
             torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE},
                              TensorOptions().dtype(kFloat));
         std::vector<torch::jit::IValue> inputs;
+#ifdef USE_CPU_ONLY
+        inputs.emplace_back(input_tensor);
+#else
         inputs.emplace_back(input_tensor.to(at::kCUDA));
-        // inputs.emplace_back(input_tensor);
+#endif
         auto output = module_->forward(inputs).toTuple()->elements();
-        // value_output_ = output[1].toTensor();
+#ifdef USE_CPU_ONLY
+        std::unique_lock<std::shared_mutex> lock(policy_mtx_);
+        policy_output_ = torch::nn::functional::softmax(
+            output[0].toTensor(), torch::nn::functional::SoftmaxFuncOptions(1));
+        lock.unlock();
+#else
         auto temp = output[0].toTensor();
         temp = torch::nn::functional::softmax(
             temp, torch::nn::functional::SoftmaxFuncOptions(1));
         std::unique_lock<std::shared_mutex> lock(policy_mtx_);
         policy_output_ = temp.to(torch::kCPU);
         lock.unlock();
+#endif
+#ifdef USE_CPU_ONLY
+        value_output_ = output[1].toTensor();
+#else
         value_output_ = output[1].toTensor().to(torch::kCPU);
+#endif
         done_processing_ = true;
         cv_.notify_all();
       } else {
@@ -87,22 +102,34 @@ public:
         using namespace std::chrono_literals;
         cv_.wait_until(ul, now + 250ms, [this] { return done_processing_; });
         if (!done_processing_) {
-          // std::cout << "program will hang; feeding input\n";
           Tensor input_tensor =
-              torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE});
+              torch::from_blob(input_, {threads_, 5, BOARD_SIZE, BOARD_SIZE},
+                               TensorOptions().dtype(kFloat));
           std::vector<torch::jit::IValue> inputs;
+#ifdef USE_CPU_ONLY
+          inputs.emplace_back(input_tensor);
+#else
           inputs.emplace_back(input_tensor.to(at::kCUDA));
-          // inputs.emplace_back(input_tensor);
+#endif
           auto output = module_->forward(inputs).toTuple()->elements();
+#ifdef USE_CPU_ONLY
+          std::unique_lock<std::shared_mutex> lock(policy_mtx_);
+          policy_output_ = torch::nn::functional::softmax(
+              output[0].toTensor(), torch::nn::functional::SoftmaxFuncOptions(1));
+          lock.unlock();
+#else
           auto temp = output[0].toTensor();
-          // value_output_ = output[1].toTensor();
-          // policy_output_ = output[0].toTensor().to(torch::kCPU);
           temp = torch::nn::functional::softmax(
               temp, torch::nn::functional::SoftmaxFuncOptions(1));
           std::unique_lock<std::shared_mutex> lock(policy_mtx_);
           policy_output_ = temp.to(torch::kCPU);
           lock.unlock();
+#endif
+#ifdef USE_CPU_ONLY
+          value_output_ = output[1].toTensor();
+#else
           value_output_ = output[1].toTensor().to(torch::kCPU);
+#endif
           done_processing_ = true;
           cv_.notify_all();
         }
@@ -148,8 +175,11 @@ NNEvaluator<threads>::NNEvaluator(const std::string &input_file)
   try {
     std::cerr << "loading model " + input_file + "\n";
     module_ = std::make_shared<torch::jit::script::Module>();
-    // *module_ = torch::jit::load(input_file);
+#ifdef USE_CPU_ONLY
+    *module_ = torch::jit::load(input_file);
+#else
     *module_ = torch::jit::load(input_file, torch::kCUDA);
+#endif
     module_->eval();
     // at::globalContext().setBenchmarkCuDNN(false);
     std::cerr << "model " + input_file + " loaded successfully\n";

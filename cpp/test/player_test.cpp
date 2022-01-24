@@ -59,9 +59,9 @@ TEST(PlayerTest, DISABLED_NNTest) {
 }
 
 // test NNEvaluator correctness under multiple threads
-TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
+TEST(PlayerTest, MultiThreadNNTest) {
   constexpr size_t num_threads = 16;
-  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("lognet43.pt");
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("net3.pt");
   std::vector<game::GameState> states;
   std::vector<float> evals;
   states.reserve(num_threads);
@@ -90,7 +90,7 @@ TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
     threads[i].join();
   }
   // check correctness against single-thread mode
-  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator<1>>("lognet43.pt");
+  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator<1>>("net3.pt");
   for (size_t i = 0; i < num_threads; ++i) {
     Evaluator::Evaluation x = st_eval->Evaluate(states[i]);
     // account for some rounding errors
@@ -100,7 +100,7 @@ TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
 }
 
 // TODO: perhaps integrate Google Benchmark or some other tool for more accurate measurement
-TEST(PlayerTest, SpeedTest) {
+TEST(PlayerTest, DISABLED_SpeedTest) {
   double sum = 0.0;
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {

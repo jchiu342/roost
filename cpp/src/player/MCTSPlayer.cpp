@@ -87,7 +87,9 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
   return get_move(std::move(state), nullptr);
 }
 
-float MCTSPlayer::get_wr(game::GameState state) { return (map_[state].Qs + 1) / 2; }
+float MCTSPlayer::get_wr(game::GameState state) {
+  return (map_[state].Qs + 1) / 2;
+}
 
 void MCTSPlayer::reset() { map_.clear(); }
 
