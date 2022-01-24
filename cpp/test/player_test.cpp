@@ -59,7 +59,7 @@ TEST(PlayerTest, DISABLED_NNTest) {
 }
 
 // test NNEvaluator correctness under multiple threads
-TEST(PlayerTest, MultiThreadNNTest) {
+TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
   constexpr size_t num_threads = 16;
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("lognet43.pt");
   std::vector<game::GameState> states;
@@ -100,12 +100,12 @@ TEST(PlayerTest, MultiThreadNNTest) {
 }
 
 // TODO: perhaps integrate Google Benchmark or some other tool for more accurate measurement
-TEST(PlayerTest, DISABLED_SpeedTest) {
+TEST(PlayerTest, SpeedTest) {
   double sum = 0.0;
   size_t num_iters = 10;
   for (size_t j = 0; j < num_iters; ++j) {
     size_t num_threads = 16;
-    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<4>>("net1.pt");
+    std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<4>>("net3.pt");
     std::vector<game::GameState> states;
     states.reserve(num_threads);
     RandomPlayer black_player;
@@ -145,7 +145,7 @@ TEST(PlayerTest, DISABLED_SpeedTest) {
   std::cout << "avg: " << std::fixed << sum / (num_iters - 1) << std::endl;
 }
 
-TEST(PlayerTest, GTPTest) {
+TEST(PlayerTest, DISABLED_GTPTest) {
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<1>>("lognet43.pt");
   std::shared_ptr<AbstractPlayer> engine = std::make_shared<MCTSPlayer>(eval, 100, true);
   GTP gtp_runner(engine);

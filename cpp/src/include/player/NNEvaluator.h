@@ -12,11 +12,12 @@
 #include <ctime>
 #include <memory>
 #include <mutex>
-#include <torch/script.h>
-#include <torch/torch.h>
+#include <shared_mutex>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <torch/script.h>
+#include <torch/torch.h>
 
 using namespace torch;
 template <int threads> class NNEvaluator : public Evaluator {
@@ -73,7 +74,9 @@ public:
         auto temp = output[0].toTensor();
         temp = torch::nn::functional::softmax(
             temp, torch::nn::functional::SoftmaxFuncOptions(1));
+        std::unique_lock<std::shared_mutex> lock(policy_mtx_);
         policy_output_ = temp.to(torch::kCPU);
+        lock.unlock();
         value_output_ = output[1].toTensor().to(torch::kCPU);
         done_processing_ = true;
         cv_.notify_all();
@@ -96,12 +99,15 @@ public:
           // policy_output_ = output[0].toTensor().to(torch::kCPU);
           temp = torch::nn::functional::softmax(
               temp, torch::nn::functional::SoftmaxFuncOptions(1));
+          std::unique_lock<std::shared_mutex> lock(policy_mtx_);
           policy_output_ = temp.to(torch::kCPU);
+          lock.unlock();
           value_output_ = output[1].toTensor().to(torch::kCPU);
           done_processing_ = true;
           cv_.notify_all();
         }
       }
+      std::shared_lock<std::shared_mutex> lock(policy_mtx_);
       std::vector<float> policy(
           policy_output_.data_ptr<float>() +
               (slot * (BOARD_SIZE * BOARD_SIZE + 1)),
@@ -116,6 +122,7 @@ public:
     Tensor value_output_;
     std::atomic<int> loaded_threads_;
     int threads_;
+    std::shared_mutex policy_mtx_;
     std::mutex mtx_;
     std::condition_variable cv_;
     bool done_processing_;
