@@ -19,20 +19,54 @@ Match::Match(std::shared_ptr<AbstractPlayer> black,
 
 int Match::run() {
   int black_wins = 0;
+  std::uniform_real_distribution<float> dist(0, 1);
   for (int i = tid_; i < num_games_; i += num_threads_) {
+    float random_pct = dist(gen_);
     std::string sgf_string = "(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]\nRU[AGA]"
                              "SZ[9]KM[7.50]\nPW[White]PB[Black]\n";
     game::GameState state;
     std::string temp_string;
+    int black_resign_moves = 0;
+    int white_resign_moves = 0;
     while (!state.done()) {
       if (state.get_turn() == game::Color::BLACK) {
-        game::Action move = black_->get_move(state, &temp_string);
-        state.move(move);
-        sgf_string += move.to_sgf_string() + temp_string;
+        if (black_resign_moves >= RESIGN_CONSECUTIVE_MOVES && random_pct > NORESIGN_PCT) {
+          state.move(game::Action(game::BLACK, game::RESIGN));
+        } else {
+          game::Action move = black_->get_move(state, &temp_string);
+          float winrate = black_->get_wr(state);
+          if (winrate > (1.0 - RESIGN_THRESHOLD)) {
+            ++white_resign_moves;
+          } else {
+            white_resign_moves = 0;
+          }
+          if (winrate < RESIGN_THRESHOLD) {
+            ++black_resign_moves;
+          } else {
+            black_resign_moves = 0;
+          }
+          state.move(move);
+          sgf_string += move.to_sgf_string() + temp_string;
+        }
       } else {
-        game::Action move = white_->get_move(state, &temp_string);
-        state.move(move);
-        sgf_string += move.to_sgf_string() + temp_string;
+        if (black_resign_moves >= RESIGN_CONSECUTIVE_MOVES && random_pct > NORESIGN_PCT) {
+          state.move(game::Action(game::BLACK, game::RESIGN));
+        } else {
+          game::Action move = white_->get_move(state, &temp_string);
+          float winrate = white_->get_wr(state);
+          if (winrate > (1.0 - RESIGN_THRESHOLD)) {
+            ++white_resign_moves;
+          } else {
+            white_resign_moves = 0;
+          }
+          if (winrate < RESIGN_THRESHOLD) {
+            ++black_resign_moves;
+          } else {
+            black_resign_moves = 0;
+          }
+          state.move(move);
+          sgf_string += move.to_sgf_string() + temp_string;
+        }
       }
     }
     if (state.winner() == game::BLACK) {

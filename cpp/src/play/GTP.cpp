@@ -49,9 +49,7 @@ void GTP::run() {
         }
 
         if (input_str_list[3] == "wr") {
-          double wr = engine_->get_wr(s);
-          wr = (wr + 1) * 50;
-          std::cout << "= winrate (for black) is " << wr << "\n" << std::endl;
+          std::cout << "= winrate (for black) is " << engine_->get_wr(s) * 100 << "\n" << std::endl;
         } else {
           std::cout << "= don't make illegal (tetris) moves -- i will "
                        "crash/bug out. please report bugs to jeremy!\n"
