@@ -69,11 +69,11 @@ public:
         inputs.emplace_back(input_tensor.to(at::kCUDA));
         // inputs.emplace_back(input_tensor);
         auto output = module_->forward(inputs).toTuple()->elements();
-        // policy_output_ = output[0].toTensor();
         // value_output_ = output[1].toTensor();
-        policy_output_ = output[0].toTensor().to(torch::kCPU);
-        policy_output_ = torch::nn::functional::softmax(
-            policy_output_, torch::nn::functional::SoftmaxFuncOptions(1));
+        auto temp = output[0].toTensor();
+        temp = torch::nn::functional::softmax(
+            temp, torch::nn::functional::SoftmaxFuncOptions(1));
+        policy_output_ = temp.to(torch::kCPU);
         value_output_ = output[1].toTensor().to(torch::kCPU);
         done_processing_ = true;
         cv_.notify_all();
@@ -81,8 +81,6 @@ public:
         // otherwise, we block until finished or until some time passes
         auto now = std::chrono::steady_clock::now();
         std::unique_lock<std::mutex> ul(mtx_);
-        // TODO: confirm that we evaluate predicate before locking for the first
-        // time. otherwise there is a bug here
         using namespace std::chrono_literals;
         cv_.wait_until(ul, now + 250ms, [this] { return done_processing_; });
         if (!done_processing_) {
@@ -93,12 +91,12 @@ public:
           inputs.emplace_back(input_tensor.to(at::kCUDA));
           // inputs.emplace_back(input_tensor);
           auto output = module_->forward(inputs).toTuple()->elements();
-          policy_output_ = output[0].toTensor();
+          auto temp = output[0].toTensor();
           // value_output_ = output[1].toTensor();
           // policy_output_ = output[0].toTensor().to(torch::kCPU);
-          policy_output_ = torch::nn::functional::softmax(
-              policy_output_, torch::nn::functional::SoftmaxFuncOptions(1));
-          policy_output_ = policy_output_.to(torch::kCPU);
+          temp = torch::nn::functional::softmax(
+              temp, torch::nn::functional::SoftmaxFuncOptions(1));
+          policy_output_ = temp.to(torch::kCPU);
           value_output_ = output[1].toTensor().to(torch::kCPU);
           done_processing_ = true;
           cv_.notify_all();
