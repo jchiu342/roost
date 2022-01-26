@@ -19,7 +19,7 @@
 #include <torch/script.h>
 #include <torch/torch.h>
 
-//#define USE_CPU_ONLY
+// #define USE_CPU_ONLY
 
 using namespace torch;
 template <int threads> class NNEvaluator : public Evaluator {

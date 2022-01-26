@@ -6,6 +6,7 @@
 #include <torch/script.h>
 #include <chrono>
 #include <string>
+#include <stdexcept>
 #include <mutex>
 #include "game/GameState.h"
 #include "player/RandomPlayer.h"
@@ -59,7 +60,7 @@ TEST(PlayerTest, DISABLED_NNTest) {
 }
 
 // test NNEvaluator correctness under multiple threads
-TEST(PlayerTest, MultiThreadNNTest) {
+TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
   constexpr size_t num_threads = 16;
   std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<num_threads>>("net3.pt");
   std::vector<game::GameState> states;
