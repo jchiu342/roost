@@ -79,6 +79,9 @@ bool GameState::is_legal_action(Action action) const {
   // return (turn_ != action.get_color() || done_)
   if (turn_ != action.get_color() || done_)
     return false;
+  if (action.get_type() == RESIGN) {
+    return true;
+  }
   return std::find(legal_action_idxes_.begin(), legal_action_idxes_.end(),
                    action.get_index()) != legal_action_idxes_.end();
   /* if (action.get_type() == PASS || action.get_type() == RESIGN)
