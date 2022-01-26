@@ -17,6 +17,9 @@ MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
 
 game::Action MCTSPlayer::get_move(game::GameState state,
                                   std::string *playout_log) {
+  if (state.done()) {
+    throw std::logic_error("get_move called on finished game\n");
+  }
   visit(state);
   if (!eval_mode_ && use_pcr_) {
     std::uniform_real_distribution<float> dist(0.0, 1.0);
@@ -74,8 +77,9 @@ game::Action MCTSPlayer::get_move(game::GameState state,
       max_visits = map_[state].N[legal_idx];
     }
   }
-  assert(0 <= best_action_idx &&
-         best_action_idx <= BOARD_SIZE * BOARD_SIZE + 1);
+  if (best_action_idx < 0 || best_action_idx > BOARD_SIZE * BOARD_SIZE) {
+    throw std::logic_error("invalid best action chosen");
+  }
   std::erase_if(map_, [&state](const auto &item) {
     auto const &[map_state, info] = item;
     return map_state.get_num_turns() <= state.get_num_turns();
@@ -189,6 +193,10 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
     map_[state].P[legal_actions[i]] =
         (1 - DIRICHLET_EPSILON) * map_[state].P[legal_actions[i]] +
         DIRICHLET_EPSILON * values[i];
-    assert(!std::isnan(map_[state].P[legal_actions[i]]));
+    // assert(!std::isnan(map_[state].P[legal_actions[i]]));
+    if (std::isnan(map_[state].P[legal_actions[i]])) {
+      std::cout << "Dirichlet noise generated isnan policy\n";
+      throw std::logic_error("Dirichlet noise generated isnan policy\n");
+    }
   }
 }
