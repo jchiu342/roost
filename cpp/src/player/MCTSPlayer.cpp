@@ -44,6 +44,9 @@ game::Action MCTSPlayer::get_move(game::GameState state,
   if (playout_log != nullptr) {
     *playout_log = "C[";
     for (int legal_idx : *(state.get_legal_action_indexes())) {
+      if (!map_.contains(state)) {
+        throw std::logic_error("map_ does not contain state");
+      }
       if (map_[state].N[legal_idx] > 0) {
         *playout_log += std::to_string(legal_idx) + ' ' +
                         std::to_string(map_[state].N[legal_idx]) + ",";
