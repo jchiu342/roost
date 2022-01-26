@@ -77,8 +77,10 @@ float GameState::score() const {
 
 bool GameState::is_legal_action(Action action) const {
   // return (turn_ != action.get_color() || done_)
-  if (turn_ != action.get_color() || done_)
+  if (turn_ != action.get_color() || done_) {
+    std::cout << "Different color turn or done\n";
     return false;
+  }
   if (action.get_type() == RESIGN) {
     return true;
   }

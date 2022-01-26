@@ -50,7 +50,7 @@ int Match::run() {
         }
       } else {
         if (black_resign_moves >= RESIGN_CONSECUTIVE_MOVES && random_pct > NORESIGN_PCT) {
-          state.move(game::Action(game::BLACK, game::RESIGN));
+          state.move(game::Action(game::WHITE, game::RESIGN));
         } else {
           game::Action move = white_->get_move(state, &temp_string);
           float winrate = white_->get_wr(state);
