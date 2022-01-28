@@ -14,7 +14,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 EPOCH = 75
 BATCH_SIZE = 256
-TRAIN_TEST_SPLIT = 0.8
+TRAIN_TEST_SPLIT = 0.85
 SAMPLE_INCLUDE_PROB = 1.0
 SAMPLES_PER_EPOCH = 500
 
@@ -41,6 +41,8 @@ def make_datasets(dataset_dir):
                         s = torch.from_numpy(np.load(fin))
                         a = torch.from_numpy(np.load(fin)).type(torch.float32)
                         w = torch.from_numpy(np.load(fin)).type(torch.float32)
+                        if s.dim() == 0:
+                            continue
                         assert (len(s) == len(a))
                         if random() < TRAIN_TEST_SPLIT:
                             for i in range(len(s)):
@@ -108,10 +110,10 @@ def start_train(data_dir, save_name):
     trainset, valset = make_datasets(data_dir)
     # board size, # filters, # blocks
     model = Net(9, 64, 5)
-    #model.load_state_dict(torch.load("net5.pth"))
+    model.load_state_dict(torch.load("net10.pth"))
     model = model.to(DEVICE)
     loss_fn = AlphaLoss()
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.01, weight_decay=1e-4)
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
     train(trainset, valset, model, loss_fn, optimizer, save_name)
 
 
