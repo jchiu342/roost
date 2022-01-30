@@ -20,8 +20,7 @@ public:
   Match(std::shared_ptr<AbstractPlayer> black,
         std::shared_ptr<AbstractPlayer> white);
   // returns number of games won by black
-  int run();
-  float run(int gameId, bool resignEnabled);
+  float run(int gameId);
 
 private:
   // TODO: investigate unique_ptr memory leak

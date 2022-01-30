@@ -16,7 +16,7 @@ Match::Match(std::shared_ptr<AbstractPlayer> black,
           std::move(black),
       } {}
 
-float Match::run(int gameId, bool resignEnabled) {
+float Match::run(int gameId) {
   int black_wins = 0;
   std::uniform_real_distribution<float> dist(0, 1);
   float random_pct = dist(gen_);
@@ -26,12 +26,13 @@ float Match::run(int gameId, bool resignEnabled) {
   std::string temp_string;
   int black_resign_moves = 0;
   int white_resign_moves = 0;
-  int resign_moves[2] = {0, 0}; // white is index 0, black is index 1
+  // int resign_moves[2] = {0, 0}; // white is index 0, black is index 1
   while (!state.done()) {
     game::Color turn = state.get_turn(); // -1 for white, 1 for black
     int turn_index = (turn + 1) / 2;     // 0 for white, 1 for black
 
-    if (resign_moves[turn_index] >= RESIGN_CONSECUTIVE_MOVES &&
+    if ((black_resign_moves >= RESIGN_CONSECUTIVE_MOVES ||
+         white_resign_moves >= RESIGN_CONSECUTIVE_MOVES) &&
         random_pct > NORESIGN_PCT) {
       state.move(game::Action(turn, game::RESIGN));
     } else {

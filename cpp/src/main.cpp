@@ -35,7 +35,7 @@ void generate_data(int num_threads, int games, int playouts,
     Match m(black, white);
 
     for (int i = tid; i < games; i += num_threads) {
-      float res = m.run(i, true);
+      float res = m.run(i);
       game_counter->fetch_add(1);
       if (res > 0) {
         win_counter->fetch_add(1);
@@ -66,7 +66,7 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
                        const std::string &model_file,
                        const std::string &save_dir) {
   std::shared_ptr<Evaluator> eval =
-      std::make_shared<NNEvaluator<32>>(model_file);
+      std::make_shared<NNEvaluator<96>>(model_file);
   std::shared_ptr<std::atomic<int>> win_counter =
       std::make_shared<std::atomic<int>>(0);
   std::shared_ptr<std::atomic<int>> game_counter =
@@ -84,7 +84,7 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
 
     for (int i = tid; i < games; i += num_threads) {
 
-      float res = m.run(i, true);
+      float res = m.run(i);
       game_counter->fetch_add(1);
       if (res > 0) {
         win_counter->fetch_add(1);
@@ -123,9 +123,9 @@ int test_strength(const std::string &model1_file,
                   int playouts, const std::string &save_dir) {
 
   std::shared_ptr<Evaluator> model1_eval =
-      std::make_shared<NNEvaluator<16>>(model1_file);
+      std::make_shared<NNEvaluator<48>>(model1_file);
   std::shared_ptr<Evaluator> model2_eval =
-      std::make_shared<NNEvaluator<16>>(model2_file);
+      std::make_shared<NNEvaluator<48>>(model2_file);
   std::shared_ptr<std::atomic<int>> win_counter =
       std::make_shared<std::atomic<int>>(0);
   std::shared_ptr<std::atomic<int>> game_counter =
@@ -144,9 +144,9 @@ int test_strength(const std::string &model1_file,
     for (int i = tid; i < games; i += num_threads) {
       float res;
       if (i % 2 == 0) {
-        res = m.run(i, true);
+        res = m.run(i);
       } else {
-        res = m2.run(i, true);
+        res = m2.run(i);
       }
       game_counter->fetch_add(1);
       if ((i % 2 == 0 && res > 0) || (i % 2 == 1 && res < 0)) {
@@ -228,7 +228,7 @@ int main(int argc, char *argv[]) {
     int num_threads = stoi(argv[5]);
     int num_playouts = stoi(argv[6]);
     std::cout << test_strength(model_1, model_2, num_threads, num_games,
-                               num_playouts, "test_strength_black")
+                               num_playouts, "test_strength")
               << std::endl;
     return 0;
   } else if (command == "gtp") {
