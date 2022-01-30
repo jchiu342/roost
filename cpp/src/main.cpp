@@ -139,7 +139,7 @@ int test_strength(const std::string &model1_file,
         std::make_shared<MCTSPlayer>(model2_eval, playouts, true);
     Match m(player1, player2);
     Match m2(player2, player1);
-    for (int i = tid; i < games/2; i+= num_threads) {
+    for (int i = tid; i < games; i+= num_threads) {
       float res;
       if (i%2 == 0) {
         res = m.run(i, true);
@@ -222,16 +222,11 @@ int main(int argc, char *argv[]) {
     }
     std::string model_1 = argv[2];
     std::string model_2 = argv[3];
-    int num_games = stoi(argv[4]) / 2;
+    int num_games = stoi(argv[4]);
     int num_threads = stoi(argv[5]);
     int num_playouts = stoi(argv[6]);
-    int b_wins = test_strength(model_1, model_2, num_threads, num_games,
-                               num_playouts, "test_strength_black");
-    std::cout << b_wins +
-                     (num_games - test_strength(model_2, model_1, num_threads,
-                                                num_games, num_playouts,
-                                                "test_strength_white"))
-              << std::endl;
+    std::cout << test_strength(model_1, model_2, num_threads, num_games,
+                               num_playouts, "test_strength_black") << std::endl;
     return 0;
   } else if (command == "gtp") {
     if (argc < 4) {
