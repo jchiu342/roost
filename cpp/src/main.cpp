@@ -41,6 +41,7 @@ void generate_data(int num_threads, int games, int playouts,
       }
       auto end = std::chrono::system_clock::now();
       std::chrono::duration<double> elapsed_seconds = end-start;
+      std::cout << black -> get_eval_time() + white -> get_eval_time();
       std::cout << "Game " << i << ": " << res << "; " << *win_counter << "/" << *game_counter
                 << "; " << (elapsed_seconds.count()/ *game_counter) << std::endl;
 
@@ -82,14 +83,17 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
     Match m (black, white);
 
     for (int i = tid; i < games; i+= num_threads) {
-      std::cout << "i is " << i << std::endl;
+
       float res = m.run(i, true);
       game_counter->fetch_add(1);
       if (res > 0) {
         win_counter->fetch_add(1);
       }
       auto end = std::chrono::system_clock::now();
+
       std::chrono::duration<double> elapsed_seconds = end-start;
+
+      std::cout << black -> get_eval_time() + white -> get_eval_time() << " " << elapsed_seconds.count() << std::endl;
       std::cout << "Game " << i << ": " << res << "; " << *win_counter << "/" << *game_counter
                 << "; " << (elapsed_seconds.count()/ *game_counter) << std::endl;
 
