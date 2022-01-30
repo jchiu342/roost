@@ -18,23 +18,16 @@
 class Match {
 public:
   Match(std::shared_ptr<AbstractPlayer> black,
-        std::shared_ptr<AbstractPlayer> white, int num_games, int num_threads,
-        int tid, std::shared_ptr<std::atomic<int>> wins,
-        std::shared_ptr<std::atomic<int>> games);
+        std::shared_ptr<AbstractPlayer> white);
   // returns number of games won by black
   int run();
+  float run(int gameId, bool resignEnabled);
 
 private:
   // TODO: investigate unique_ptr memory leak
-  std::shared_ptr<AbstractPlayer> black_;
-  std::shared_ptr<AbstractPlayer> white_;
-  std::shared_ptr<std::atomic<int>> wins_;
-  std::shared_ptr<std::atomic<int>> games_;
+  std::shared_ptr<AbstractPlayer> players[2];
   std::random_device rd_;
   std::mt19937 gen_;
-  int tid_;
-  int num_games_;
-  int num_threads_;
   // std::string save_dir_;
 };
 

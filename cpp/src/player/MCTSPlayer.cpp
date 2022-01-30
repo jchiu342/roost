@@ -8,12 +8,13 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <chrono>
 
 MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
                        bool eval_mode, bool use_pcr, int pcr_small, int pcr_big)
     : AbstractPlayer(), evaluator_(std::move(evaluator)), gen_(rd_()),
       playouts_(playouts), eval_mode_(eval_mode), use_pcr_(use_pcr),
-      pcr_small_(pcr_small), pcr_big_(pcr_big) {}
+      pcr_small_(pcr_small), pcr_big_(pcr_big), eval_time_(0) {}
 
 game::Action MCTSPlayer::get_move(game::GameState state,
                                   std::string *playout_log) {
@@ -100,6 +101,10 @@ float MCTSPlayer::get_wr(game::GameState state) {
 
 void MCTSPlayer::reset() { map_.clear(); }
 
+double MCTSPlayer::get_eval_time() {
+  return eval_time_;
+}
+
 float MCTSPlayer::visit(const game::GameState &state) {
   if (state.done()) {
     return (state.winner() == game::BLACK ? 1.0f : -1.0f);
@@ -109,12 +114,19 @@ float MCTSPlayer::visit(const game::GameState &state) {
     // initialize everything to 0
     map_[state].N.assign(BOARD_SIZE * BOARD_SIZE + 1, 0);
     map_[state].Q.assign(BOARD_SIZE * BOARD_SIZE + 1, 0.0f);
+
+    auto start = std::chrono::system_clock::now();
     Evaluator::Evaluation eval = evaluator_->Evaluate(state);
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    eval_time_ += elapsed_seconds.count();
+
     // cache our policy and value
     map_[state].P = eval.policy_;
     map_[state].Ns = 1;
     map_[state].Qs = eval.value_;
     assert(map_[state].P.size() == BOARD_SIZE * BOARD_SIZE + 1);
+
     return eval.value_;
   }
   // TODO: rewrite MCTS to handle transpositions

@@ -35,6 +35,7 @@ public:
   game::Action get_move(game::GameState state) override;
   float get_wr(game::GameState state) override;
   void reset() override;
+  double get_eval_time() override;
 
 private:
   float visit(const game::GameState &state);
@@ -48,6 +49,7 @@ private:
   bool use_pcr_;
   int pcr_small_;
   int pcr_big_;
+  double eval_time_;
 };
 
 #endif // ROOST_MCTSPLAYER_H

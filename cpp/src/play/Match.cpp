@@ -10,83 +10,56 @@
 #include <string>
 
 Match::Match(std::shared_ptr<AbstractPlayer> black,
-             std::shared_ptr<AbstractPlayer> white, int num_games,
-             int num_threads, int tid, std::shared_ptr<std::atomic<int>> wins,
-             std::shared_ptr<std::atomic<int>> games)
-    : black_(std::move(black)), white_(std::move(white)),
-      wins_(std::move(wins)), games_(std::move(games)), tid_(tid),
-      num_games_(num_games), num_threads_(num_threads) {}
+             std::shared_ptr<AbstractPlayer> white)
+    : players{std::move(white), std::move(black), }{}
 
-int Match::run() {
+float Match::run(int gameId, bool resignEnabled){
   int black_wins = 0;
   std::uniform_real_distribution<float> dist(0, 1);
-  for (int i = tid_; i < num_games_; i += num_threads_) {
-    float random_pct = dist(gen_);
-    std::string sgf_string = "(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]\nRU[AGA]"
-                             "SZ[9]KM[7.50]\nPW[White]PB[Black]\n";
-    game::GameState state;
-    std::string temp_string;
-    int black_resign_moves = 0;
-    int white_resign_moves = 0;
-    while (!state.done()) {
-      if (state.get_turn() == game::Color::BLACK) {
-        if (black_resign_moves >= RESIGN_CONSECUTIVE_MOVES && random_pct > NORESIGN_PCT) {
-          state.move(game::Action(game::BLACK, game::RESIGN));
-        } else {
-          game::Action move = black_->get_move(state, &temp_string);
-          float winrate = black_->get_wr(state);
-          if (winrate > (1.0 - RESIGN_THRESHOLD)) {
-            ++white_resign_moves;
-          } else {
-            white_resign_moves = 0;
-          }
-          if (winrate < RESIGN_THRESHOLD) {
-            ++black_resign_moves;
-          } else {
-            black_resign_moves = 0;
-          }
-          state.move(move);
-          sgf_string += move.to_sgf_string() + temp_string;
-        }
-      } else {
-        if (black_resign_moves >= RESIGN_CONSECUTIVE_MOVES && random_pct > NORESIGN_PCT) {
-          state.move(game::Action(game::WHITE, game::RESIGN));
-        } else {
-          game::Action move = white_->get_move(state, &temp_string);
-          float winrate = white_->get_wr(state);
-          if (winrate > (1.0 - RESIGN_THRESHOLD)) {
-            ++white_resign_moves;
-          } else {
-            white_resign_moves = 0;
-          }
-          if (winrate < RESIGN_THRESHOLD) {
-            ++black_resign_moves;
-          } else {
-            black_resign_moves = 0;
-          }
-          state.move(move);
-          sgf_string += move.to_sgf_string() + temp_string;
-        }
-      }
-    }
-    if (state.winner() == game::BLACK) {
-      ++black_wins;
-      sgf_string += "RE[B+R])";
-    } else {
-      sgf_string += "RE[W+R])";
-    }
-    black_->reset();
-    white_->reset();
-    // dump sgf to file
-    std::ofstream outfile(std::to_string(i) + ".sgf");
-    outfile << sgf_string;
-    outfile.close();
+  float random_pct = dist(gen_);
+  std::string sgf_string = "(;GM[1]FF[4]CA[UTF-8]AP[CGoban:3]ST[2]\nRU[AGA]"
+                           "SZ[9]KM[7.50]\nPW[White]PB[Black]\n";
+  game::GameState state;
+  std::string temp_string;
+  int black_resign_moves = 0;
+  int white_resign_moves = 0;
+  int resign_moves[2] = {0,0}; // white is index 0, black is index 1
+  while (!state.done()) {
+    game::Color turn = state.get_turn(); // -1 for white, 1 for black
+    int turn_index = (turn + 1) / 2; // 0 for white, 1 for black
 
-    int total_games = games_->fetch_add(1);
-    int total_wins = wins_->fetch_add(state.winner() == game::BLACK ? 1 : 0);
-    std::cout << state.score() << "; "
-              << total_wins + (state.winner() == game::BLACK ? 1 : 0) << "/"
-              << total_games + 1 << std::endl;
+    if (resign_moves[turn_index] >= RESIGN_CONSECUTIVE_MOVES && random_pct > NORESIGN_PCT) {
+      state.move(game::Action(turn, game::RESIGN));
+    } else {
+      game::Action move = players[turn_index]->get_move(state, &temp_string);
+      float winrate = players[turn_index]->get_wr(state);
+      if (winrate > (1.0 - RESIGN_THRESHOLD)) {
+        ++white_resign_moves;
+      } else {
+        white_resign_moves = 0;
+      }
+      if (winrate < RESIGN_THRESHOLD) {
+        ++black_resign_moves;
+      } else {
+        black_resign_moves = 0;
+      }
+      state.move(move);
+      sgf_string += move.to_sgf_string() + temp_string;
+    }
+
   }
-  return black_wins;
+  if (state.winner() == game::BLACK) {
+    ++black_wins;
+    sgf_string += "RE[B+R])";
+  } else {
+    sgf_string += "RE[W+R])";
+  }
+  players[0]->reset();
+  players[1]->reset();
+  // dump sgf to file
+  std::ofstream outfile(std::to_string(gameId) + ".sgf");
+  outfile << sgf_string;
+  outfile.close();
+
+  return state.score();
 }
