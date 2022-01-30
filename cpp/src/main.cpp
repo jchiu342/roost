@@ -24,7 +24,8 @@ void generate_data(int num_threads, int games, int playouts,
       std::make_shared<std::atomic<int>>(0);
   std::shared_ptr<std::atomic<int>> game_counter =
       std::make_shared<std::atomic<int>>(0);
-  std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+  std::chrono::system_clock::time_point start =
+      std::chrono::system_clock::now();
   auto task = [&, eval, num_threads, playouts, win_counter,
                game_counter](int tid, int games) {
     std::shared_ptr<AbstractPlayer> black =
@@ -33,20 +34,19 @@ void generate_data(int num_threads, int games, int playouts,
         std::make_shared<MCTSPlayer>(eval, playouts);
     Match m(black, white);
 
-    for (int i = tid; i < games; i+= num_threads) {
+    for (int i = tid; i < games; i += num_threads) {
       float res = m.run(i, true);
       game_counter->fetch_add(1);
       if (res > 0) {
         win_counter->fetch_add(1);
       }
       auto end = std::chrono::system_clock::now();
-      std::chrono::duration<double> elapsed_seconds = end-start;
-      std::cout << black -> get_eval_time() + white -> get_eval_time();
-      std::cout << "Game " << i << ": " << res << "; " << *win_counter << "/" << *game_counter
-                << "; " << (elapsed_seconds.count()/ *game_counter) << std::endl;
-
+      std::chrono::duration<double> elapsed_seconds = end - start;
+      std::cout << black->get_eval_time() + white->get_eval_time();
+      std::cout << "Game " << i << ": " << res << "; " << *win_counter << "/"
+                << *game_counter << "; "
+                << (elapsed_seconds.count() / *game_counter) << std::endl;
     }
-
   };
   auto starting_path = fs::current_path();
   fs::create_directory(save_dir);
@@ -62,7 +62,6 @@ void generate_data(int num_threads, int games, int playouts,
   fs::current_path(starting_path);
 }
 
-
 void generate_data_pcr(int num_threads, int games, int small, int big,
                        const std::string &model_file,
                        const std::string &save_dir) {
@@ -72,7 +71,8 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
       std::make_shared<std::atomic<int>>(0);
   std::shared_ptr<std::atomic<int>> game_counter =
       std::make_shared<std::atomic<int>>(0);
-  std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+  std::chrono::system_clock::time_point start =
+      std::chrono::system_clock::now();
 
   auto task = [&, eval, num_threads, small, big, win_counter,
                game_counter](int tid, int games) {
@@ -80,9 +80,9 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
         std::make_shared<MCTSPlayer>(eval, -1, false, true, small, big);
     std::shared_ptr<AbstractPlayer> white =
         std::make_shared<MCTSPlayer>(eval, -1, false, true, small, big);
-    Match m (black, white);
+    Match m(black, white);
 
-    for (int i = tid; i < games; i+= num_threads) {
+    for (int i = tid; i < games; i += num_threads) {
 
       float res = m.run(i, true);
       game_counter->fetch_add(1);
@@ -91,12 +91,13 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
       }
       auto end = std::chrono::system_clock::now();
 
-      std::chrono::duration<double> elapsed_seconds = end-start;
+      std::chrono::duration<double> elapsed_seconds = end - start;
 
-      std::cout << black -> get_eval_time() + white -> get_eval_time() << " " << elapsed_seconds.count() << std::endl;
-      std::cout << "Game " << i << ": " << res << "; " << *win_counter << "/" << *game_counter
-                << "; " << (elapsed_seconds.count()/ *game_counter) << std::endl;
-
+      std::cout << black->get_eval_time() + white->get_eval_time() << " "
+                << elapsed_seconds.count() << std::endl;
+      std::cout << "Game " << i << ": " << res << "; " << *win_counter << "/"
+                << *game_counter << "; "
+                << (elapsed_seconds.count() / *game_counter) << std::endl;
     }
   };
 
@@ -118,8 +119,8 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
 }
 
 int test_strength(const std::string &model1_file,
-                  const std::string &model2_file, int num_threads,
-                  int games, int playouts, const std::string &save_dir) {
+                  const std::string &model2_file, int num_threads, int games,
+                  int playouts, const std::string &save_dir) {
 
   std::shared_ptr<Evaluator> model1_eval =
       std::make_shared<NNEvaluator<16>>(model1_file);
@@ -129,7 +130,8 @@ int test_strength(const std::string &model1_file,
       std::make_shared<std::atomic<int>>(0);
   std::shared_ptr<std::atomic<int>> game_counter =
       std::make_shared<std::atomic<int>>(0);
-  std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+  std::chrono::system_clock::time_point start =
+      std::chrono::system_clock::now();
 
   auto task = [&, model1_eval, model2_eval, num_threads, win_counter,
                game_counter](int tid, int games, int playouts) {
@@ -139,21 +141,21 @@ int test_strength(const std::string &model1_file,
         std::make_shared<MCTSPlayer>(model2_eval, playouts, true);
     Match m(player1, player2);
     Match m2(player2, player1);
-    for (int i = tid; i < games; i+= num_threads) {
+    for (int i = tid; i < games; i += num_threads) {
       float res;
-      if (i%2 == 0) {
+      if (i % 2 == 0) {
         res = m.run(i, true);
       } else {
         res = m2.run(i, true);
       }
       game_counter->fetch_add(1);
-      if (i%2 == 0 && res > 0 || i%2 == 1 && res < 0) {
+      if ((i % 2 == 0 && res > 0) || (i % 2 == 1 && res < 0)) {
         win_counter->fetch_add(1); // player 1 wins
       }
       auto end = std::chrono::system_clock::now();
-      std::chrono::duration<double> elapsed_seconds = end-start;
-      std::cout << res << "; " << *win_counter << "/" << *game_counter
-                << "; " << (elapsed_seconds.count()/ *game_counter) << std::endl;
+      std::chrono::duration<double> elapsed_seconds = end - start;
+      std::cout << res << "; " << *win_counter << "/" << *game_counter << "; "
+                << (elapsed_seconds.count() / *game_counter) << std::endl;
     }
   };
 
@@ -226,7 +228,8 @@ int main(int argc, char *argv[]) {
     int num_threads = stoi(argv[5]);
     int num_playouts = stoi(argv[6]);
     std::cout << test_strength(model_1, model_2, num_threads, num_games,
-                               num_playouts, "test_strength_black") << std::endl;
+                               num_playouts, "test_strength_black")
+              << std::endl;
     return 0;
   } else if (command == "gtp") {
     if (argc < 4) {

@@ -5,10 +5,10 @@
 #include "player/MCTSPlayer.h"
 #include "player/MCTS_defs.h"
 #include <cassert>
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <numeric>
-#include <chrono>
 
 MCTSPlayer::MCTSPlayer(std::shared_ptr<Evaluator> evaluator, int playouts,
                        bool eval_mode, bool use_pcr, int pcr_small, int pcr_big)
@@ -101,9 +101,7 @@ float MCTSPlayer::get_wr(game::GameState state) {
 
 void MCTSPlayer::reset() { map_.clear(); }
 
-double MCTSPlayer::get_eval_time() {
-  return eval_time_;
-}
+double MCTSPlayer::get_eval_time() { return eval_time_; }
 
 float MCTSPlayer::visit(const game::GameState &state) {
   if (state.done()) {
@@ -118,7 +116,7 @@ float MCTSPlayer::visit(const game::GameState &state) {
     auto start = std::chrono::system_clock::now();
     Evaluator::Evaluation eval = evaluator_->Evaluate(state);
     auto end = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::chrono::duration<double> elapsed_seconds = end - start;
     eval_time_ += elapsed_seconds.count();
 
     // cache our policy and value

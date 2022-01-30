@@ -13,11 +13,11 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include <torch/script.h>
+#include <torch/torch.h>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <torch/script.h>
-#include <torch/torch.h>
 
 // #define USE_CPU_ONLY
 
@@ -115,7 +115,8 @@ public:
 #ifdef USE_CPU_ONLY
           std::unique_lock<std::shared_mutex> lock(policy_mtx_);
           policy_output_ = torch::nn::functional::softmax(
-              output[0].toTensor(), torch::nn::functional::SoftmaxFuncOptions(1));
+              output[0].toTensor(),
+              torch::nn::functional::SoftmaxFuncOptions(1));
           lock.unlock();
 #else
           auto temp = output[0].toTensor();
