@@ -98,7 +98,7 @@ def train(trainset, valset, model, save_name):
         for _ in tqdm(range(SAMPLES_PER_EPOCH)):
             state, action, result = iterator.next()
             s, a, r = state.to(DEVICE), action.to(DEVICE), result.to(DEVICE)
-            with torch.autocast():
+            with torch.autocast(device_type="cuda"):
                 pred_policy, pred_value = model(s)
                 loss = loss_fn(pred_policy, a, pred_value, r)
             total_loss += loss.item()
