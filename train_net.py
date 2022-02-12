@@ -86,7 +86,10 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
     save_trace(model, save_name, log_iter)
 
 
-def train(trainset, valset, model, loss_fn, optimizer, save_name):
+def train(trainset, valset, model, save_name):
+    loss_fn = AlphaLoss()
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
+    scaler = torch.cuda.amp.GradScaler()
     for i in range(EPOCH):
         val(valset, model, loss_fn, save_name, i)
         model.train()
@@ -95,26 +98,27 @@ def train(trainset, valset, model, loss_fn, optimizer, save_name):
         for _ in tqdm(range(SAMPLES_PER_EPOCH)):
             state, action, result = iterator.next()
             s, a, r = state.to(DEVICE), action.to(DEVICE), result.to(DEVICE)
-            pred_policy, pred_value = model(s)
-            loss = loss_fn(pred_policy, a, pred_value, r)
+            with torch.autocast():
+                pred_policy, pred_value = model(s)
+                loss = loss_fn(pred_policy, a, pred_value, r)
             total_loss += loss.item()
             optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+            scaler.scale(loss).backward()
+            scaler.step(optimizer)
+            scaler.update()
         avg_loss = round(total_loss / SAMPLES_PER_EPOCH, 5)
         print(" train loss: ", avg_loss)
         LOGGER.add_scalar("Train loss", avg_loss, i)
 
 
-def start_train(data_dir, save_name):
+def start_train(data_dir, load_name, save_name):
+    assert torch.cuda.is_available()
     trainset, valset = make_datasets(data_dir)
     # board size, # filters, # blocks
-    model = Net(9, 64, 5)
-    model.load_state_dict(torch.load("net10.pth"))
+    model = Net(9, 96, 6)
+    model.load_state_dict(torch.load(load_name))
     model = model.to(DEVICE)
-    loss_fn = AlphaLoss()
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
-    train(trainset, valset, model, loss_fn, optimizer, save_name)
+    train(trainset, valset, model, save_name)
 
 
 def save_trace(model, trace_file_name, log_iter):
