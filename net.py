@@ -130,9 +130,11 @@ class Net(nn.Module):
     def __init__(self, board_size, num_filters, num_blocks, cX=32):
         super(Net, self).__init__()
         self.blocks = [ConvBlock(num_filters, board_size)]
-        for i in range(num_blocks - 1):
-            self.blocks.append(ResBlock(num_filters))
-        self.blocks.append(PoolingBlock(num_filters, cX, board_size))
+        for i in range(num_blocks):
+            if i % (num_blocks // 2) == 0:
+                self.blocks.append(PoolingBlock(num_filters, cX, board_size))
+            else:
+                self.blocks.append(ResBlock(num_filters))
         self.blocks.append(OutBlock(board_size, num_filters))
         self.blocks = torch.nn.Sequential(*self.blocks)
 

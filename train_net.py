@@ -88,7 +88,7 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
 
 def train(trainset, valset, model, save_name):
     loss_fn = AlphaLoss()
-    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.0001, weight_decay=1e-4)
+    optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.01, weight_decay=1e-4)
     scaler = torch.cuda.amp.GradScaler()
     for i in range(EPOCH):
         val(valset, model, loss_fn, save_name, i)
