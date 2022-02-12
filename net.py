@@ -36,12 +36,23 @@ class PoolingStructure(nn.Module):
         self.avg_pool1 = nn.AvgPool2d(board_size)
         self.max_pool1 = nn.MaxPool2d(board_size)
         self.fc1 = nn.Linear(2 * cG, cX)
+        self.cX = cX
+        self.cG = cG
 
     def forward(self, s):
-        X, G = s
+        X, G = torch.split(s, [self.cX, self.cG], dim=1)
+        # print(G.size())
         G = F.relu(self.bn1(G))
-        G = torch.cat(self.avg_pool1(G), self.max_pool1(G))
+        #avg_pool = self.avg_pool1(G)
+        #max_pool = self.max_pool1(G)
+        G = torch.cat((self.avg_pool1(G), self.max_pool1(G)), dim=1)
+        #print(G.size())
+        G = torch.squeeze(G)
+        #print(G.size())
         G = self.fc1(G)
+        #print(G.size())
+        G = G.view(-1, self.cX, 1, 1)
+        #print(X.size())
         return X + G
 
 
@@ -54,12 +65,14 @@ class PoolingBlock(nn.Module):
                                padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(cX)
         self.cX = cX
+        self.num_filters = num_filters
         self.pool = PoolingStructure(cX, num_filters - cX, board_size)
 
     def forward(self, x):
         residual = x
         out = self.conv1(x)
-        out = self.pool.forward((out[:, :, :self.cX], out[:, :, self.cX:]))
+        out = self.pool.forward(out)
+        #out = self.pool.forward(torch.split(out, [self.cX, self.num_filters - self.cX], dim=1))
         out = F.relu(self.bn1(out))
         out = self.conv2(out)
         out += residual
