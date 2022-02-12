@@ -12,7 +12,7 @@ import sys
 import os
 import concurrent.futures
 
-SAMPLE_PLAYOUT_NUM = 599
+SAMPLE_PLAYOUT_NUM = 999
 
 # TODO: make this less hacky
 # ONLY WORKS FOR BOARD_SIZE <= 9
