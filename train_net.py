@@ -111,12 +111,13 @@ def train(trainset, valset, model, save_name):
         LOGGER.add_scalar("Train loss", avg_loss, i)
 
 
-def start_train(data_dir, load_name, save_name):
+def start_train(data_dir, save_name, load_name=None):
     assert torch.cuda.is_available()
     trainset, valset = make_datasets(data_dir)
     # board size, # filters, # blocks
     model = Net(9, 96, 6)
-    model.load_state_dict(torch.load(load_name))
+    if load_name is not None:
+        model.load_state_dict(torch.load(load_name))
     model = model.to(DEVICE)
     train(trainset, valset, model, save_name)
 

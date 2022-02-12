@@ -16,7 +16,7 @@ matplotlib.use("Agg")
 # we require 5 channels: 2-history and 1 for whose move it is
 class ConvBlock(nn.Module):
     def __init__(self, num_filters, board_size):
-        super(ConvBlock, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(5, num_filters, 3, stride=1, padding=1)
         self.bn1 = nn.BatchNorm2d(num_filters)
         self.board_size = board_size
@@ -27,8 +27,48 @@ class ConvBlock(nn.Module):
         return s
 
 
+# modified version of global pooling layers -- only 1 mean bc we are on a single board size
+class PoolingStructure(nn.Module):
+    def __init__(self, cX, cG, board_size):
+        super().__init__()
+        self.board_size = board_size
+        self.bn1 = nn.BatchNorm2d(cG)
+        self.avg_pool1 = nn.AvgPool2d(board_size)
+        self.max_pool1 = nn.MaxPool2d(board_size)
+        self.fc1 = nn.Linear(2 * cG, cX)
+
+    def forward(self, s):
+        X, G = s
+        G = F.relu(self.bn1(G))
+        G = torch.cat(self.avg_pool1(G), self.max_pool1(G))
+        G = self.fc1(G)
+        return X + G
+
+
+class PoolingBlock(nn.Module):
+    def __init__(self, num_filters, cX, board_size):
+        super().__init__()
+        self.conv1 = nn.Conv2d(num_filters, num_filters, kernel_size=3, stride=1,
+                               padding=1, bias=False)
+        self.conv2 = nn.Conv2d(cX, num_filters, kernel_size=3, stride=1,
+                               padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(cX)
+        self.cX = cX
+        self.pool = PoolingStructure(cX, num_filters - cX, board_size)
+
+    def forward(self, x):
+        residual = x
+        out = self.conv1(x)
+        out = self.pool.forward((out[:, :, :self.cX], out[:, :, self.cX:]))
+        out = F.relu(self.bn1(out))
+        out = self.conv2(out)
+        out += residual
+        out = F.relu(out)
+        return out
+
+
 class ResBlock(nn.Module):
-    def __init__(self, num_filters, stride=1, downsample=None):
+    def __init__(self, num_filters, stride=1):
         super().__init__()
         self.conv1 = nn.Conv2d(num_filters, num_filters, kernel_size=3, stride=stride,
                                padding=1, bias=False)
@@ -74,11 +114,12 @@ class OutBlock(nn.Module):
 
 
 class Net(nn.Module):
-    def __init__(self, board_size, num_filters, num_blocks):
+    def __init__(self, board_size, num_filters, num_blocks, cX=32):
         super(Net, self).__init__()
         self.blocks = [ConvBlock(num_filters, board_size)]
-        for i in range(num_blocks):
+        for i in range(num_blocks - 1):
             self.blocks.append(ResBlock(num_filters))
+        self.blocks.append(PoolingBlock(num_filters, cX, board_size))
         self.blocks.append(OutBlock(board_size, num_filters))
         self.blocks = torch.nn.Sequential(*self.blocks)
 
