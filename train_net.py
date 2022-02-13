@@ -3,6 +3,7 @@ import numpy as np
 from fire import Fire
 from tqdm import tqdm
 import torch
+import torch_tensorrt
 import torchvision
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.swa_utils import AveragedModel, SWALR
@@ -81,7 +82,7 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
             loss = loss_fn(pred_policy, a, pred_value, r)
             total_loss += loss.item()
             if it == 0:
-                dummy_input = s[0].to("cpu")
+                dummy_input = s.to("cpu")
             it += 1
     avg_loss = round(total_loss / it, 5)
     print(" val loss: ", avg_loss)
@@ -135,14 +136,26 @@ def start_train(data_dir, save_name, load_name=None):
     model = model.to(DEVICE)
     train(trainset, valset, model, save_name)
 
+inputs = [torch_tensorrt.Input(
+    min_shape=[1,5,9,9],
+    opt_shape=[81,5,9,9],
+    max_shape=[256,5,9,9],
+    dtype=torch.float,
+)]
+
+enabled_precisions = {torch.float}
 
 def save_trace(model, trace_file_name, log_iter, dummy_input):
     model = model.to(torch.device("cpu"))
     torch.save(model.state_dict(), trace_file_name + str(log_iter) + ".pth")
     scripted_model = torch.jit.script(model)
     scripted_model.save(trace_file_name + str(log_iter) + ".pt")
-    torch.onnx.export(model, dummy_input, trace_file_name + str(log_iter) + ".onnx", input_names=['input'],
-                      output_names=['output'], export_params=True)
+    print(dummy_input.size())
+    trt_ts_module = torch_tensorrt.compile(scripted_model, inputs=[dummy_input], enabled_precisions=enabled_precisions)
+    result = trt_ts_module(dummy_input)
+    torch.jit.save(trt_ts_module, trace_file_name + str(log_iter) + ".ts")
+    #torch.onnx.export(model, dummy_input, trace_file_name + str(log_iter) + ".onnx", input_names=['input'],
+    #                  output_names=['output'], export_params=True)
     print("saved " + trace_file_name + str(log_iter) + ".pt/.pth")
     model = model.to(DEVICE)
 
