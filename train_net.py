@@ -17,7 +17,7 @@ EPOCH = 75
 BATCH_SIZE = 256
 TRAIN_TEST_SPLIT = 0.85
 SAMPLE_INCLUDE_PROB = 1.0
-SAMPLES_PER_EPOCH = 500
+SAMPLES_PER_EPOCH = 50
 
 
 class GameDataset(torch.utils.data.Dataset):
@@ -80,13 +80,13 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
             pred_policy, pred_value = model(s)
             loss = loss_fn(pred_policy, a, pred_value, r)
             total_loss += loss.item()
-            #if it == 0:
-            #    dummy_input = s[0].to("cpu")
+            if it == 0:
+                dummy_input = s[0].to("cpu")
             it += 1
     avg_loss = round(total_loss / it, 5)
     print(" val loss: ", avg_loss)
     LOGGER.add_scalar("Val loss", avg_loss, log_iter)
-    save_trace(model, save_name, log_iter, None)
+    save_trace(model, save_name, log_iter, dummy_input)
 
 
 def train(trainset, valset, model, save_name):
