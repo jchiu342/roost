@@ -94,9 +94,9 @@ def train(trainset, valset, model, save_name):
     scaler = torch.cuda.amp.GradScaler()
 
     swa_model = AveragedModel(model)
-    scheduler = CosineAnnealingLR(optimizer, T_max=100)
-    swa_start = 5
-    swa_scheduler = SWALR(optimizer, swa_lr=0.05)
+    scheduler = CosineAnnealingLR(optimizer, T_max=25)
+    swa_start = 1
+    swa_scheduler = SWALR(optimizer, swa_lr=0.001)
 
     for i in range(EPOCH):
         val(valset, model, loss_fn, save_name, i)
