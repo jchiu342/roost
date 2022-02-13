@@ -11,7 +11,6 @@ import os
 from random import random
 from os.path import exists
 
-
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 LOGGER = SummaryWriter("runs/testrun")
 EPOCH = 75
@@ -57,14 +56,14 @@ def make_datasets(dataset_dir):
                     except ValueError:
                         break
     trainset = torch.utils.data.DataLoader(
-    	GameDataset(train_examples),
-    	shuffle=True, 
-    	batch_size=BATCH_SIZE
+        GameDataset(train_examples),
+        shuffle=True,
+        batch_size=BATCH_SIZE
     )
     valset = torch.utils.data.DataLoader(
-    	GameDataset(val_examples),
-    	shuffle=True,
-    	batch_size=BATCH_SIZE
+        GameDataset(val_examples),
+        shuffle=True,
+        batch_size=BATCH_SIZE
     )
     return trainset, valset
 
@@ -81,11 +80,13 @@ def val(valset, model, loss_fn, save_name, log_iter=0):
             pred_policy, pred_value = model(s)
             loss = loss_fn(pred_policy, a, pred_value, r)
             total_loss += loss.item()
+            #if it == 0:
+            #    dummy_input = s[0].to("cpu")
             it += 1
     avg_loss = round(total_loss / it, 5)
     print(" val loss: ", avg_loss)
     LOGGER.add_scalar("Val loss", avg_loss, log_iter)
-    save_trace(model, save_name, log_iter)
+    save_trace(model, save_name, log_iter, None)
 
 
 def train(trainset, valset, model, save_name):
@@ -135,11 +136,13 @@ def start_train(data_dir, save_name, load_name=None):
     train(trainset, valset, model, save_name)
 
 
-def save_trace(model, trace_file_name, log_iter):
+def save_trace(model, trace_file_name, log_iter, dummy_input):
     model = model.to(torch.device("cpu"))
     torch.save(model.state_dict(), trace_file_name + str(log_iter) + ".pth")
     scripted_model = torch.jit.script(model)
     scripted_model.save(trace_file_name + str(log_iter) + ".pt")
+    torch.onnx.export(model, dummy_input, trace_file_name + str(log_iter) + ".onnx", input_names=['input'],
+                      output_names=['output'], export_params=True)
     print("saved " + trace_file_name + str(log_iter) + ".pt/.pth")
     model = model.to(DEVICE)
 
