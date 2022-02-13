@@ -5,6 +5,8 @@ from tqdm import tqdm
 import torch
 import torchvision
 from torch.utils.tensorboard import SummaryWriter
+from torch.optim.swa_utils import AveragedModel, SWALR
+from torch.optim.lr_scheduler import CosineAnnealingLR
 import os
 from random import random
 from os.path import exists
@@ -16,7 +18,7 @@ EPOCH = 75
 BATCH_SIZE = 256
 TRAIN_TEST_SPLIT = 0.85
 SAMPLE_INCLUDE_PROB = 1.0
-SAMPLES_PER_EPOCH = 500
+SAMPLES_PER_EPOCH = 10
 
 
 class GameDataset(torch.utils.data.Dataset):
@@ -90,6 +92,12 @@ def train(trainset, valset, model, save_name):
     loss_fn = AlphaLoss()
     optimizer = torch.optim.SGD(model.parameters(), momentum=0.9, lr=0.01, weight_decay=1e-4)
     scaler = torch.cuda.amp.GradScaler()
+
+    swa_model = AveragedModel(model)
+    scheduler = CosineAnnealingLR(optimizer, T_max=100)
+    swa_start = 5
+    swa_scheduler = SWALR(optimizer, swa_lr=0.05)
+
     for i in range(EPOCH):
         val(valset, model, loss_fn, save_name, i)
         model.train()
@@ -109,6 +117,11 @@ def train(trainset, valset, model, save_name):
         avg_loss = round(total_loss / SAMPLES_PER_EPOCH, 5)
         print(" train loss: ", avg_loss)
         LOGGER.add_scalar("Train loss", avg_loss, i)
+        if i > swa_start:
+            swa_model.update_parameters(model)
+            swa_scheduler.step()
+        else:
+            scheduler.step()
 
 
 def start_train(data_dir, save_name, load_name=None):
