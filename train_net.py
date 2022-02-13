@@ -18,7 +18,7 @@ EPOCH = 75
 BATCH_SIZE = 256
 TRAIN_TEST_SPLIT = 0.85
 SAMPLE_INCLUDE_PROB = 1.0
-SAMPLES_PER_EPOCH = 10
+SAMPLES_PER_EPOCH = 500
 
 
 class GameDataset(torch.utils.data.Dataset):
