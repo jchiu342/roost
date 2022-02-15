@@ -38,6 +38,7 @@ def save(filename):
         game = Game(BOARD_SIZE, handi=0, komi=7.5, gui=False)
         states = []
         actions = []
+        winner = None
         while True:
             try:
                 line = file_object.readline()
@@ -67,7 +68,10 @@ def save(filename):
                     winner = WHITE if line.find("RE[W") != -1 else BLACK
             except EOFError:
                 break
-        return(states, actions, winner)
+        if winner is None:
+            print(filename + " has invalid winner; discarded")
+        else:
+            return states, actions, winner
 
 
 def generate_training_data(num_games, save_train_file, save_val_file, train_split=0.8, playouts=50):
