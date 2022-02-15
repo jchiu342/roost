@@ -26,7 +26,9 @@ def read_from_sgf(game_dir, save_file):
                 results.append(executor.submit(save, filename))
 
             for f in tqdm(concurrent.futures.as_completed(results)):
-                states, actions, winner = f.result()
+                res = f.result()
+                if res is not None:
+                    states, actions, winner = res
                 np.save(fout, states)
                 np.save(fout, actions)
                 np.save(fout, winner)
@@ -70,6 +72,7 @@ def save(filename):
                 break
         if winner is None:
             print(filename + " has invalid winner; discarded")
+            return None
         else:
             return states, actions, winner
 
