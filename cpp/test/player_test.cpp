@@ -91,7 +91,7 @@ TEST(PlayerTest, DISABLED_MultiThreadNNTest) {
     threads[i].join();
   }
   // check correctness against single-thread mode
-  std::shared_ptr<Evaluator> st_eval = std::make_shared<NNEvaluator<1>>("net3.pt");
+  std::unique_ptr<Evaluator> st_eval = std::make_unique<NNEvaluator<1>>("net3.pt");
   for (size_t i = 0; i < num_threads; ++i) {
     Evaluator::Evaluation x = st_eval->Evaluate(states[i]);
     // account for some rounding errors
@@ -147,7 +147,7 @@ TEST(PlayerTest, DISABLED_SpeedTest) {
 }
 
 TEST(PlayerTest, DISABLED_GTPTest) {
-  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<1>>("lognet43.pt");
+  std::shared_ptr<Evaluator> eval = std::make_shared<NNEvaluator<1>>("net3.pt");
   std::shared_ptr<AbstractPlayer> engine = std::make_shared<MCTSPlayer>(eval, 100, true);
   GTP gtp_runner(engine);
   gtp_runner.run();

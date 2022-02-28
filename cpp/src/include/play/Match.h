@@ -17,14 +17,14 @@
 
 class Match {
 public:
-  Match(std::shared_ptr<AbstractPlayer> black,
-        std::shared_ptr<AbstractPlayer> white);
+  Match(std::unique_ptr<AbstractPlayer> &&black,
+        std::unique_ptr<AbstractPlayer> &&white);
   // returns number of games won by black
   float run(int gameId);
 
 private:
   // TODO: investigate unique_ptr memory leak
-  std::shared_ptr<AbstractPlayer> players[2];
+  std::unique_ptr<AbstractPlayer> players[2];
   std::random_device rd_;
   std::mt19937 gen_;
   // std::string save_dir_;

@@ -23,6 +23,7 @@ public:
     float value_;
   };
   virtual Evaluation Evaluate(const game::GameState &state) = 0;
+  virtual ~Evaluator() = default;
 };
 
 #endif // ROOST_EVALUATOR_H

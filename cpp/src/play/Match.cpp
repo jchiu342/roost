@@ -9,8 +9,8 @@
 #include <memory>
 #include <string>
 
-Match::Match(std::shared_ptr<AbstractPlayer> black,
-             std::shared_ptr<AbstractPlayer> white)
+Match::Match(std::unique_ptr<AbstractPlayer> &&black,
+             std::unique_ptr<AbstractPlayer> &&white)
     : players{
           std::move(white),
           std::move(black),

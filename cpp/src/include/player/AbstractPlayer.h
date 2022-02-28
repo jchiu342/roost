@@ -13,6 +13,7 @@
 class AbstractPlayer {
 public:
   explicit AbstractPlayer() {}
+  virtual ~AbstractPlayer() = default;
   virtual float get_wr(game::GameState state) { return 0.0f; }
   virtual double get_eval_time() { return 0.0; }
   virtual game::Action get_move(game::GameState state, std::string *log) {

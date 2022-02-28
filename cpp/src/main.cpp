@@ -19,7 +19,7 @@ namespace fs = std::filesystem;
 void generate_data(int num_threads, int games, int playouts,
                    const std::string &model_file, const std::string &save_dir) {
   std::shared_ptr<Evaluator> eval =
-      std::make_shared<NNEvaluator<32>>(model_file);
+      std::make_shared<NNEvaluator<4>>(model_file);
   std::shared_ptr<std::atomic<int>> win_counter =
       std::make_shared<std::atomic<int>>(0);
   std::shared_ptr<std::atomic<int>> game_counter =
@@ -28,11 +28,11 @@ void generate_data(int num_threads, int games, int playouts,
       std::chrono::system_clock::now();
   auto task = [&, eval, num_threads, playouts, win_counter,
                game_counter](int tid, int games) {
-    std::shared_ptr<AbstractPlayer> black =
-        std::make_shared<MCTSPlayer>(eval, playouts);
-    std::shared_ptr<AbstractPlayer> white =
-        std::make_shared<MCTSPlayer>(eval, playouts);
-    Match m(black, white);
+    std::unique_ptr<AbstractPlayer> black =
+        std::make_unique<MCTSPlayer>(eval, playouts);
+    std::unique_ptr<AbstractPlayer> white =
+        std::make_unique<MCTSPlayer>(eval, playouts);
+    Match m(std::move(black), std::move(white));
 
     for (int i = tid; i < games; i += num_threads) {
       float res = m.run(i);
@@ -42,7 +42,7 @@ void generate_data(int num_threads, int games, int playouts,
       }
       auto end = std::chrono::system_clock::now();
       std::chrono::duration<double> elapsed_seconds = end - start;
-      std::cout << black->get_eval_time() + white->get_eval_time();
+      // std::cout << black->get_eval_time() + white->get_eval_time();
       std::cout << "Game " << i << ": " << res << "; " << *win_counter << "/"
                 << *game_counter << "; "
                 << (elapsed_seconds.count() / *game_counter) << std::endl;
@@ -76,11 +76,11 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
 
   auto task = [&, eval, num_threads, small, big, win_counter,
                game_counter](int tid, int games) {
-    std::shared_ptr<AbstractPlayer> black =
-        std::make_shared<MCTSPlayer>(eval, -1, false, true, small, big);
-    std::shared_ptr<AbstractPlayer> white =
-        std::make_shared<MCTSPlayer>(eval, -1, false, true, small, big);
-    Match m(black, white);
+    std::unique_ptr<AbstractPlayer> black =
+        std::make_unique<MCTSPlayer>(eval, -1, false, true, small, big);
+    std::unique_ptr<AbstractPlayer> white =
+        std::make_unique<MCTSPlayer>(eval, -1, false, true, small, big);
+    Match m(std::move(black), std::move(white));
 
     for (int i = tid; i < games; i += num_threads) {
 
@@ -93,8 +93,8 @@ void generate_data_pcr(int num_threads, int games, int small, int big,
 
       std::chrono::duration<double> elapsed_seconds = end - start;
 
-      std::cout << black->get_eval_time() + white->get_eval_time() << " "
-                << elapsed_seconds.count() << std::endl;
+      // std::cout << black->get_eval_time() + white->get_eval_time() << " "
+      //           << elapsed_seconds.count() << std::endl;
       std::cout << "Game " << i << ": " << res << "; " << *win_counter << "/"
                 << *game_counter << "; "
                 << (elapsed_seconds.count() / *game_counter) << std::endl;
@@ -135,12 +135,12 @@ int test_strength(const std::string &model1_file,
 
   auto task = [&, model1_eval, model2_eval, num_threads, win_counter,
                game_counter](int tid, int games, int playouts) {
-    std::shared_ptr<AbstractPlayer> player1 =
-        std::make_shared<MCTSPlayer>(model1_eval, playouts, true);
-    std::shared_ptr<AbstractPlayer> player2 =
-        std::make_shared<MCTSPlayer>(model2_eval, playouts, true);
-    Match m(player1, player2);
-    Match m2(player2, player1);
+    std::unique_ptr<AbstractPlayer> player1 =
+        std::make_unique<MCTSPlayer>(model1_eval, playouts, true);
+    std::unique_ptr<AbstractPlayer> player2 =
+        std::make_unique<MCTSPlayer>(model2_eval, playouts, true);
+    Match m(std::move(player1), std::move(player2));
+    Match m2(std::move(player2), std::move(player1));
     for (int i = tid; i < games; i += num_threads) {
       float res;
       if (i % 2 == 0) {
