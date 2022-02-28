@@ -139,8 +139,12 @@ int test_strength(const std::string &model1_file,
         std::make_unique<MCTSPlayer>(model1_eval, playouts, true);
     std::unique_ptr<AbstractPlayer> player2 =
         std::make_unique<MCTSPlayer>(model2_eval, playouts, true);
+    std::unique_ptr<AbstractPlayer> player3 =
+        std::make_unique<MCTSPlayer>(model1_eval, playouts, true);
+    std::unique_ptr<AbstractPlayer> player4 =
+        std::make_unique<MCTSPlayer>(model2_eval, playouts, true);
     Match m(std::move(player1), std::move(player2));
-    Match m2(std::move(player2), std::move(player1));
+    Match m2(std::move(player4), std::move(player3));
     for (int i = tid; i < games; i += num_threads) {
       float res;
       if (i % 2 == 0) {
