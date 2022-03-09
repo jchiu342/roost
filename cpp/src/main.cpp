@@ -12,6 +12,16 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+void segfault_sigaction(int signal, siginfo_t *si, void *arg)
+{
+  printf("Caught segfault at address %p\n", si->si_addr);
+  exit(0);
+}
 
 using namespace game;
 namespace fs = std::filesystem;
@@ -188,6 +198,14 @@ void gtp(const std::string &model_file, int playouts) {
 }
 
 int main(int argc, char *argv[]) {
+  struct sigaction sa;
+
+  memset(&sa, 0, sizeof(struct sigaction));
+  sigemptyset(&sa.sa_mask);
+  sa.sa_sigaction = segfault_sigaction;
+  sa.sa_flags   = SA_SIGINFO;
+
+  sigaction(SIGSEGV, &sa, NULL);
   if (argc < 3) {
     std::cout << "Incorrect usage\n";
     return -1;
