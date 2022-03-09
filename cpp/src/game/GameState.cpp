@@ -11,14 +11,17 @@
 
 namespace game {
 
-GameState::GameState(float komi, const std::shared_ptr<Zobrist> &zobrist)
+GameState::GameState(float komi, const std::shared_ptr<Zobrist> &&zobrist)
     : turn_(BLACK), winner_(EMPTY), komi_(komi), turns_(0), passes_(0),
       done_(false) {
   if (zobrist == nullptr) {
     zobrist_ = std::make_shared<Zobrist>(BOARD_SIZE * BOARD_SIZE * 2 + 1);
   } else {
     zobrist_ = zobrist;
-    assert(zobrist_->size() >= BOARD_SIZE * BOARD_SIZE * 2 + 1);
+    if (zobrist_->size() < BOARD_SIZE * BOARD_SIZE * 2 + 1) {
+      throw std::logic_error("zobrist vector too small");
+    }
+    // assert(zobrist_->size() >= BOARD_SIZE * BOARD_SIZE * 2 + 1);
   }
   std::memset(boards_, 0, sizeof(boards_));
   std::memset(liberties_, 0, sizeof(liberties_));
@@ -35,7 +38,9 @@ GameState::GameState(float komi, const std::shared_ptr<Zobrist> &zobrist)
 }
 
 Color GameState::get_turn() const {
-  assert(!done_);
+  if (done_) {
+    throw std::logic_error("get_turn called on finished game");
+  }
   return turn_;
 }
 
@@ -78,24 +83,20 @@ float GameState::score() const {
 bool GameState::is_legal_action(Action action) const {
   // return (turn_ != action.get_color() || done_)
   if (turn_ != action.get_color() || done_) {
-    std::cout << "Different color turn or done\n";
-    return false;
+    throw std::logic_error("is_legal_action called on wrong color or finished game");
   }
   if (action.get_type() == RESIGN) {
     return true;
   }
   return std::find(legal_action_idxes_.begin(), legal_action_idxes_.end(),
                    action.get_index()) != legal_action_idxes_.end();
-  /* if (action.get_type() == PASS || action.get_type() == RESIGN)
-    return true;
-  return is_legal_play_(action.get_x(), action.get_y(), action.get_color()); */
 }
 
 const std::vector<int> *GameState::get_legal_action_indexes() const {
   // action indexes go from 0 to BOARD_SIZE * BOARD_SIZE + 1
   // does NOT include resign, as stated in the header
   if (done_) {
-    return nullptr;
+    throw std::logic_error("get_legal_action called when game finished\n");
   }
   return &legal_action_idxes_;
 }

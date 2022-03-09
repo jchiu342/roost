@@ -50,12 +50,16 @@ ActionType Action::get_type() const {
 }
 
 int Action::get_x() const {
-  assert((abs(value_) - 1) < BOARD_SIZE * BOARD_SIZE);
+  if ((abs(value_) - 1) >= BOARD_SIZE * BOARD_SIZE) {
+    throw std::logic_error("action value x illegal");
+  }
   return (abs(value_) - 1) / BOARD_SIZE;
 }
 
 int Action::get_y() const {
-  assert((abs(value_) - 1) < BOARD_SIZE * BOARD_SIZE);
+  if ((abs(value_) - 1) >= BOARD_SIZE * BOARD_SIZE) {
+    throw std::logic_error("action value y illegal");
+  }
   return (abs(value_) - 1) % BOARD_SIZE;
 }
 

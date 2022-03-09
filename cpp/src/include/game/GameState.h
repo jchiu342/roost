@@ -18,7 +18,7 @@ namespace game {
 class GameState {
 public:
   explicit GameState(float komi = 7.5,
-                     const std::shared_ptr<Zobrist> &zobrist = nullptr);
+                     const std::shared_ptr<Zobrist> &&zobrist = nullptr);
   // int operator==(const GameState &other);
 
   // gets the turn; undefined behavior if game is done
