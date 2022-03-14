@@ -12,6 +12,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include <execinfo.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,7 +21,11 @@
 void segfault_sigaction(int signal, siginfo_t *si, void *arg)
 {
   printf("Caught segfault at address %p\n", si->si_addr);
-  exit(0);
+  void *array[15];
+  size_t size;
+  size = backtrace(array, 15);
+  backtrace_symbols_fd(array, size, STDOUT_FILENO);
+  exit(1);
 }
 
 using namespace game;
