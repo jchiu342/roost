@@ -24,7 +24,7 @@ void segfault_sigaction(int signal, siginfo_t *si, void *arg)
   void *array[15];
   size_t size;
   size = backtrace(array, 15);
-  backtrace_symbols_fd(array, size, STDOUT_FILENO);
+  backtrace_symbols_fd(array, size, 1);
   exit(1);
 }
 

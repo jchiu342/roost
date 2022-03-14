@@ -81,8 +81,7 @@ template <> struct std::hash<game::GameState> {
 template <> struct std::equal_to<game::GameState> {
   bool operator()(const game::GameState &lhs,
                   const game::GameState &rhs) const {
-    return lhs.hash() == rhs.hash() && *(lhs.get_legal_action_indexes()) ==
-                                           *(rhs.get_legal_action_indexes());
+    return lhs.hash() == rhs.hash();
   }
 };
 
