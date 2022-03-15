@@ -42,15 +42,16 @@ game::Action MCTSPlayer::get_move(game::GameState state,
       visit(state);
     }
   }
+  size_t state_hash = state.hash();
   if (playout_log != nullptr) {
     *playout_log = "C[";
     for (int legal_idx : *(state.get_legal_action_indexes())) {
-      if (!map_.contains(state)) {
+      if (!map_.contains(state_hash)) {
         throw std::logic_error("map_ does not contain state");
       }
-      if (map_[state].N[legal_idx] > 0) {
+      if (map_[state_hash].N[legal_idx] > 0) {
         *playout_log += std::to_string(legal_idx) + ' ' +
-                        std::to_string(map_[state].N[legal_idx]) + ",";
+                        std::to_string(map_[state_hash].N[legal_idx]) + ",";
       }
     }
     *playout_log += "]\n";
@@ -62,11 +63,11 @@ game::Action MCTSPlayer::get_move(game::GameState state,
   if ((!eval_mode_ || state.get_num_turns() < TEMP_0_MOVE_NUM_VAL) &&
       state.get_num_turns() < TEMP_0_MOVE_NUM_TRAIN) {
     std::uniform_int_distribution<> dist(
-        1, std::accumulate(map_[state].N.begin(), map_[state].N.end(), 0));
+        1, std::accumulate(map_[state_hash].N.begin(), map_[state_hash].N.end(), 0));
     int vis_num = dist(gen_);
     int counter = 0;
     for (int legal_idx : *(state.get_legal_action_indexes())) {
-      counter += map_[state].N[legal_idx];
+      counter += map_[state_hash].N[legal_idx];
       if (counter >= vis_num) {
         assert(0 <= legal_idx && legal_idx <= BOARD_SIZE * BOARD_SIZE + 1);
         return {state.get_turn(), legal_idx};
@@ -76,18 +77,18 @@ game::Action MCTSPlayer::get_move(game::GameState state,
   int best_action_idx = -1;
   int max_visits = -1;
   for (int legal_idx : *(state.get_legal_action_indexes())) {
-    if (map_[state].N[legal_idx] > max_visits) {
+    if (map_[state_hash].N[legal_idx] > max_visits) {
       best_action_idx = legal_idx;
-      max_visits = map_[state].N[legal_idx];
+      max_visits = map_[state_hash].N[legal_idx];
     }
   }
   if (best_action_idx < 0 || best_action_idx > BOARD_SIZE * BOARD_SIZE) {
     throw std::logic_error("invalid best action chosen");
   }
-  std::erase_if(map_, [&state](const auto &item) {
+  /*std::erase_if(map_, [&state](const auto &item) {
     auto const &[map_state, info] = item;
     return map_state.get_num_turns() <= state.get_num_turns();
-  });
+  });*/
   return {state.get_turn(), best_action_idx};
 }
 
@@ -96,7 +97,7 @@ game::Action MCTSPlayer::get_move(game::GameState state) {
 }
 
 float MCTSPlayer::get_wr(game::GameState state) {
-  return (map_[state].Qs + 1) / 2;
+  return (map_[state.hash()].Qs + 1) / 2;
 }
 
 void MCTSPlayer::reset() { map_.clear(); }
@@ -107,11 +108,14 @@ float MCTSPlayer::visit(const game::GameState &state) {
   if (state.done()) {
     return (state.winner() == game::BLACK ? 1.0f : -1.0f);
   }
+  size_t state_hash = state.hash();
   // if never visited, expand
-  if (!map_.contains(state)) {
+  if (!map_.contains(state_hash)) {
     // initialize everything to 0
-    map_[state].N.assign(BOARD_SIZE * BOARD_SIZE + 1, 0);
-    map_[state].Q.assign(BOARD_SIZE * BOARD_SIZE + 1, 0.0f);
+    MCTSNode d;
+    map_[state_hash] = d;
+    map_[state_hash].N.assign(BOARD_SIZE * BOARD_SIZE + 1, 0);
+    map_[state_hash].Q.assign(BOARD_SIZE * BOARD_SIZE + 1, 0.0f);
 
     auto start = std::chrono::system_clock::now();
     Evaluator::Evaluation eval = evaluator_->Evaluate(state);
@@ -120,9 +124,9 @@ float MCTSPlayer::visit(const game::GameState &state) {
     eval_time_ += elapsed_seconds.count();
 
     // cache our policy and value
-    map_[state].P = eval.policy_;
-    map_[state].Ns = 1;
-    map_[state].Qs = eval.value_;
+    map_[state_hash].P = eval.policy_;
+    map_[state_hash].Ns = 1;
+    map_[state_hash].Qs = eval.value_;
     assert(map_[state].P.size() == BOARD_SIZE * BOARD_SIZE + 1);
 
     return eval.value_;
@@ -131,27 +135,27 @@ float MCTSPlayer::visit(const game::GameState &state) {
   float max_u = -100000000.0f;
   int best_action_idx = -1;
   // precompute sqrt(sum_a N(s, a)) term for all items
-  float sqrt_term = std::sqrt(map_[state].Ns);
+  float sqrt_term = std::sqrt(map_[state_hash].Ns);
   // calculate P(explored) term for FPU
   float c_fpu_term = 0.0;
   for (int legal_idx : *(state.get_legal_action_indexes())) {
-    if (map_[state].N[legal_idx] > 0) {
-      c_fpu_term += map_[state].P[legal_idx];
+    if (map_[state_hash].N[legal_idx] > 0) {
+      c_fpu_term += map_[state_hash].P[legal_idx];
     }
   }
   // if we are white, we take -Q for all Q's since we try to minimize
   c_fpu_term =
-      (state.get_turn() == game::BLACK ? map_[state].Qs : -map_[state].Qs) -
+      (state.get_turn() == game::BLACK ? map_[state_hash].Qs : -map_[state_hash].Qs) -
       MCTS_CFPU * std::sqrt(c_fpu_term);
   for (int legal_idx : *(state.get_legal_action_indexes())) {
     // u = Q(s, a) + cpuct * P(s, a) * sqrt(sum_a N(s, a)) / (1 + N(s, a))
     float u =
-        (map_[state].N[legal_idx] == 0
+        (map_[state_hash].N[legal_idx] == 0
              ? c_fpu_term
-             : (state.get_turn() == game::BLACK ? map_[state].Q[legal_idx]
-                                                : -map_[state].Q[legal_idx])) +
-        MCTS_CPUCT * map_[state].P[legal_idx] * sqrt_term /
-            (1 + map_[state].N[legal_idx]);
+             : (state.get_turn() == game::BLACK ? map_[state_hash].Q[legal_idx]
+                                                : -map_[state_hash].Q[legal_idx])) +
+        MCTS_CPUCT * map_[state_hash].P[legal_idx] * sqrt_term /
+            (1 + map_[state_hash].N[legal_idx]);
     if (u > max_u) {
       max_u = u;
       best_action_idx = legal_idx;
@@ -161,18 +165,19 @@ float MCTSPlayer::visit(const game::GameState &state) {
     throw std::logic_error("invalid mcts action");
   }
   game::GameState state_copy = state;
-  state_copy.move(game::Action(state.get_turn(), best_action_idx));
+  state_copy.move(game::Action(state_copy.get_turn(), best_action_idx));
+  size_t state_copy_hash = state_copy.hash();
   float result = visit(state_copy);
-  map_[state].Qs =
-      ((map_[state].Qs * map_[state].Ns) + result) / (map_[state].Ns + 1);
-  ++(map_[state].Ns);
+  map_[state_hash].Qs =
+      ((map_[state_hash].Qs * map_[state_hash].Ns) + result) / (map_[state_hash].Ns + 1);
+  ++(map_[state_hash].Ns);
   if (!state_copy.done()) {
-    map_[state].Q[best_action_idx] = map_[state_copy].Qs;
-    map_[state].N[best_action_idx] = map_[state_copy].Ns;
+    map_[state_hash].Q[best_action_idx] = map_[state_copy_hash].Qs;
+    map_[state_hash].N[best_action_idx] = map_[state_copy_hash].Ns;
   } else {
     // we can't hash finished positions, so we just update manually
-    map_[state].Q[best_action_idx] = result;
-    ++(map_[state].N[best_action_idx]);
+    map_[state_hash].Q[best_action_idx] = result;
+    ++(map_[state_hash].N[best_action_idx]);
   }
   return result;
 }
@@ -181,6 +186,7 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
   if (state.done()) {
     return;
   }
+  size_t state_hash = state.hash();
   const std::vector<int> legal_actions = *state.get_legal_action_indexes();
   size_t num_values = legal_actions.size();
   const float alpha = DIRICHLET_UNSCALED_ALPHA / num_values;
@@ -203,11 +209,11 @@ void MCTSPlayer::apply_dirichlet_noise_(const game::GameState &state) {
       (eval_mode_) ? DIRICHLET_EPSILON_VAL : DIRICHLET_EPSILON_TRAIN;
   for (size_t i = 0; i < num_values; ++i) {
     assert(!std::isnan(map_[state].P[legal_actions[i]]));
-    map_[state].P[legal_actions[i]] =
-        (1 - DIRICHLET_EPSILON) * map_[state].P[legal_actions[i]] +
+    map_[state_hash].P[legal_actions[i]] =
+        (1 - DIRICHLET_EPSILON) * map_[state_hash].P[legal_actions[i]] +
         DIRICHLET_EPSILON * values[i];
     // assert(!std::isnan(map_[state].P[legal_actions[i]]));
-    if (std::isnan(map_[state].P[legal_actions[i]])) {
+    if (std::isnan(map_[state_hash].P[legal_actions[i]])) {
       std::cout << "Dirichlet noise generated isnan policy\n";
       throw std::logic_error("Dirichlet noise generated isnan policy\n");
     }
