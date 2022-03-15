@@ -15,10 +15,11 @@ GameState::GameState(float komi, const std::shared_ptr<Zobrist> &&zobrist)
     : turn_(BLACK), winner_(EMPTY), komi_(komi), turns_(0), passes_(0),
       done_(false) {
   if (zobrist == nullptr) {
-    zobrist_ = std::make_shared<Zobrist>(BOARD_SIZE * BOARD_SIZE * 2 + 1);
+    // first BOARD_SIZE * BOARD_SIZE * 2 + 1 elements for game features; last BOARD_SIZE^2 for masking
+    zobrist_ = std::make_shared<Zobrist>(BOARD_SIZE * BOARD_SIZE * 3 + 1);
   } else {
     zobrist_ = zobrist;
-    if (zobrist_->size() < BOARD_SIZE * BOARD_SIZE * 2 + 1) {
+    if (zobrist_->size() < BOARD_SIZE * BOARD_SIZE * 3 + 1) {
       throw std::logic_error("zobrist vector too small");
     }
     // assert(zobrist_->size() >= BOARD_SIZE * BOARD_SIZE * 2 + 1);
@@ -302,7 +303,13 @@ void GameState::move(Action action) {
   }
 }
 
-size_t GameState::hash() const { return hash_; }
+size_t GameState::hash() const {
+  size_t ret = hash_;
+  for (const int &legal_idx : legal_action_idxes_) {
+    ret ^= zobrist_->get_value(BOARD_SIZE * BOARD_SIZE * 2 + 1 + legal_idx);
+  }
+  return ret;
+}
 
 // X = black, O = white, . = empty
 std::string GameState::to_string() const {
