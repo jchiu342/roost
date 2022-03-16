@@ -31,10 +31,12 @@ float Match::run(int gameId) {
     game::Color turn = state.get_turn(); // -1 for white, 1 for black
     int turn_index = (turn + 1) / 2;     // 0 for white, 1 for black
 
-    if ((black_resign_moves >= RESIGN_CONSECUTIVE_MOVES ||
-         white_resign_moves >= RESIGN_CONSECUTIVE_MOVES) &&
-        random_pct > NORESIGN_PCT) {
-      state.move(game::Action(turn, game::RESIGN));
+    if (random_pct > NORESIGN_PCT) {
+      if (state.get_turn() == game::BLACK && black_resign_moves >= RESIGN_CONSECUTIVE_MOVES) {
+        state.move(game::Action(turn, game::RESIGN));
+      } else if (state.get_turn() == game::WHITE && white_resign_moves >= RESIGN_CONSECUTIVE_MOVES) {
+        state.move(game::Action(turn, game::RESIGN));
+      }
     } else {
       game::Action move = players[turn_index]->get_move(state, &temp_string);
       float winrate = players[turn_index]->get_wr(state);
